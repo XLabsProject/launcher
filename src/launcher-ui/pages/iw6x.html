@@ -1,17 +1,21 @@
 <div class="grid">
-    <span id="data" class="container card">
-        <span class="title">IW6x</span>
-        <span class="content">Soon...</span>
+    <span class="a container card" id="ghosts-sp">
+        <span class="title">Singleplayer</span>
+        <span class="content img" style="background-image: url(./img/iw6x-sp.png)"></span>
+    </span>
+
+    <span class="a container card" id="ghosts-mp">
+        <span class="title">Multiplayer</span>
+        <span class="content img" style="background-image: url(./img/iw6x-mp.png)"></span>
     </span>
 </div>
 
 <style>
     #content>.grid {
-        display: flex;
-        width: 100%;
-    }
-
-    #data {
         flex: 1 1 auto;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-auto-rows: minmax(100px, auto);
     }
 </style>
