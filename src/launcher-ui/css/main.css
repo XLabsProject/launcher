@@ -295,6 +295,7 @@ input[type="radio"]::before {
     position: absolute;
     background: white;
     border: 1px solid rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.1s linear;
 }
 
 input[type="radio"]::after {
@@ -315,6 +316,10 @@ input[type="radio"]:checked {
 
 input[type="radio"]:checked::after {
     background: rgb(0, 135, 193);
+}
+
+input[type="radio"]:hover::before {
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.07), 0 3px 6px rgba(0, 0, 0, 0.13);
 }
 
 ::selection {
