@@ -10,6 +10,14 @@
 
 namespace
 {
+	bool try_lock_termination_barrier()
+	{
+		static std::atomic_bool barrier{false};
+
+		auto expected = false;
+		return barrier.compare_exchange_strong(expected, true);
+	}
+
 	std::string get_appdata_path()
 	{
 		PWSTR path;
@@ -91,6 +99,11 @@ namespace
 
 			const auto aw_install = utils::properties::load("aw-install");
 			if (!aw_install)
+			{
+				return;
+			}
+
+			if (!try_lock_termination_barrier())
 			{
 				return;
 			}
