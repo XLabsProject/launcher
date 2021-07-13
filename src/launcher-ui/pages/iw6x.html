@@ -19,3 +19,40 @@
         grid-auto-rows: minmax(100px, auto);
     }
 </style>
+
+<script>
+    (function () {
+        function launchGhostsVariant(id) {
+            executeCommand('launch-ghosts', id);
+        }
+
+        function showConfigureWarning() {
+            window.showMessageBox("⚙ IW6x not configured",
+                "You have not configured your <b>Ghosts installation</b> path.<br><br>Please do so in the settings!",
+                ["Ok"]).then(index => {
+                window.showSettings();
+            });
+        }
+
+        function handleGhosts() {
+            const el = this;
+            const id = el.id;
+
+            executeCommand('get-property', 'ghosts-install').then(folder => {
+                console.log(folder);
+                if (!folder) {
+                    showConfigureWarning();
+                }
+                else {
+                    launchGhostsVariant(id);
+                }
+            });
+        }
+
+        const ghostsNnodes = document.querySelectorAll("#content>.grid>.a");
+        for (var i = 0; i < ghostsNnodes.length; ++i) {
+            const node = ghostsNnodes[i];
+            node.onclick = handleGhosts;
+        }
+    })();
+</script>

@@ -116,6 +116,45 @@ namespace
 			cef_ui.close_browser();
 		});
 
+		cef_ui.add_command("launch-ghosts", [&cef_ui](const rapidjson::Value& value, auto&)
+		{
+			if (!value.IsString())
+			{
+				return;
+			}
+
+			std::string arg{value.GetString(), value.GetStringLength()};
+
+			static const std::unordered_map<std::string, std::string> arg_mapping = {
+				{"ghosts-sp", "-singleplayer"},
+				{"ghosts-mp", "-multiplayer"},
+			};
+
+			const auto mapped_arg = arg_mapping.find(arg);
+			if (mapped_arg == arg_mapping.end())
+			{
+				return;
+			}
+
+			const auto aw_install = utils::properties::load("ghosts-install");
+			if (!aw_install)
+			{
+				return;
+			}
+
+			if (!try_lock_termination_barrier())
+			{
+				return;
+			}
+
+			SetEnvironmentVariableA("XLABS_GHOSTS_INSTALL", aw_install->data());
+
+			const auto s1x_exe = get_appdata_path() + "data/iw6x/iw6x.exe";
+			utils::nt::launch_process(s1x_exe, mapped_arg->second);
+
+			cef_ui.close_browser();
+		});
+
 		cef_ui.add_command("browse-folder", [](const auto&, rapidjson::Document& response)
 		{
 			response.SetNull();
