@@ -4,10 +4,13 @@
 <head>
     <title>X Labs | Launcher</title>
     <meta charset="UTF-8" />
+    <link href="./css/dark.css" rel="stylesheet" media="(prefers-color-scheme: dark)" />
+    <link href="./css/light.css" rel="stylesheet" media="(prefers-color-scheme: light)" />
     <link href="./css/main.css" rel="stylesheet" />
     <script src="./js/command.js"></script>
     <script src="./js/message-box.js"></script>
     <script src="./js/main.js"></script>
+    <script src="./js/dark-mode-toggle.mjs" type="module"></script>
 </head>
 
 <body class="hidden">
@@ -43,6 +46,12 @@
     </span>
 
     <div id="vignette"></div>
+
+    <!-- This is necessary to load preferred mode (if changed) on opening launcher -->
+    <dark-mode-toggle 
+        hidden
+        permanent="true">
+    </dark-mode-toggle>
 </body>
 
 </html>
