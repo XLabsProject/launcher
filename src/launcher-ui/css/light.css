@@ -8,6 +8,10 @@ body {
     background: white;
 }
 
+.card {
+    background: #eff2fa;
+}
+
 .card>.title {
     background: white;
 }

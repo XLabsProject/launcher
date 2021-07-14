@@ -8,6 +8,10 @@ body {
     background: #222;
 }
 
+.card {
+    background: #333;
+}
+
 .card>.title {
     background: #222;
 }
