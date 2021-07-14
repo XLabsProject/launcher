@@ -18,6 +18,28 @@ img {
     -webkit-user-drag: none;
 }
 
+#controls {
+    z-index: 1000;
+}
+
+#container {
+z-index: 100;
+}
+
+#background {
+    position: fixed;
+    top: -100px;
+    left: -100px;
+    right: -100px;
+    bottom: -100px;
+    background: linear-gradient(
+        135deg
+        , rgba(6,10,15,1) 32%, rgba(26,43,65,1) 50%, rgba(79,109,148,1) 59%, rgba(157,174,182,1) 65%, rgba(65,82,91,1) 78%, rgba(42,55,63,1) 89%, rgba(14,14,14,1) 100%);
+    filter: blur(50px);
+    box-shadow: inset 0px 0px 84px 223px rgb(51 51 51 / 50%);
+    display: none;
+}
+
 .container {
     background: white;
     border-radius: 10px;
@@ -34,7 +56,7 @@ img.container {
 }
 
 .card {
-    background: transparent;
+    background: #eff2fa;
     padding: 0px;
     display: flex;
     flex-flow: column;
@@ -340,7 +362,8 @@ input[type="radio"]:hover::before {
     }
 
     .card {
-        background: transparent;
+        /*background: transparent;*/
+        background: #333;
     }
 
     .card>.title {
