@@ -67,6 +67,11 @@ namespace
 		return strstr(GetCommandLineA(), "--xlabs-subprocess");
 	}
 
+	bool is_dedi()
+	{
+		return !is_subprocess() && (strstr(GetCommandLineA(), "-dedicated") || strstr(GetCommandLineA(), "-update"));
+	}
+
 	int run_subprocess(const utils::nt::library& process, const std::string& path)
 	{
 		const cef::cef_ui cef_ui{process, path};
@@ -82,7 +87,7 @@ namespace
 				return;
 			}
 
-			std::string arg{value.GetString(), value.GetStringLength()};
+			const std::string arg{value.GetString(), value.GetStringLength()};
 
 			static const std::unordered_map<std::string, std::string> arg_mapping = {
 				{"aw-sp", "-singleplayer"},
@@ -123,7 +128,7 @@ namespace
 				return;
 			}
 
-			std::string arg{value.GetString(), value.GetStringLength()};
+			const std::string arg{value.GetString(), value.GetStringLength()};
 
 			static const std::unordered_map<std::string, std::string> arg_mapping = {
 				{"ghosts-sp", "-singleplayer"},
@@ -227,7 +232,7 @@ namespace
 			}
 		});
 
-		cef_ui.add_command("get-channel", [&cef_ui](auto&, rapidjson::Document& response)
+		cef_ui.add_command("get-channel", [](auto&, rapidjson::Document& response)
 		{
 			const std::string channel = updater::is_main_channel() ? "main" : "dev";
 			response.SetString(channel, response.GetAllocator());
@@ -282,7 +287,11 @@ int CALLBACK WinMain(const HINSTANCE instance, HINSTANCE, LPSTR, int)
 		updater::run(path);
 #endif
 
-		show_window(lib, path);
+		if (!is_dedi())
+		{
+			show_window(lib, path);
+		}
+
 		return 0;
 	}
 	catch (updater::update_cancelled&)
