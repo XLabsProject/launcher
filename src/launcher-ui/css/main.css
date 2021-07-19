@@ -1,12 +1,10 @@
 html,
 body {
     margin: 0;
-    background: #eff2fa;
     font-family: 'Segoe UI Emoji', Tahoma, Geneva, Verdana, sans-serif;
     width: 100%;
     height: 100%;
     user-select: none;
-    color: #555;
 }
 
 body {
@@ -41,7 +39,6 @@ z-index: 100;
 }
 
 .container {
-    background: white;
     border-radius: 10px;
     padding: 20px;
     margin: 15px;
@@ -56,7 +53,6 @@ img.container {
 }
 
 .card {
-    background: #eff2fa;
     padding: 0px;
     display: flex;
     flex-flow: column;
@@ -72,7 +68,6 @@ img.container {
     border-top-right-radius: 10px;
     padding: 20px;
     display: block;
-    background: white;
     flex: 0 1 auto;
 }
 
@@ -101,7 +96,6 @@ img.container {
     flex: 0 1 auto;
     height: 100%;
     max-height: 100%;
-    background: white;
     display: inline-block;
     box-shadow: 0 19px 38px rgba(0, 0, 0, 0.03), 0 15px 12px rgba(0, 0, 0, 0.03);
     padding: 20px;
@@ -112,7 +106,6 @@ img.container {
     width: calc(100% + 40px);
     height: 1px;
     display: block;
-    background: #eff2fa;
     margin-left: -20px;
     margin-right: -20px;
     z-index: 0;
@@ -129,16 +122,11 @@ img.container {
     display: block;
     width: 7vw;
     height: 7vw;
-    box-shadow: 0 9px 19px rgba(0, 0, 0, 0.1), 0 15px 12px rgba(0, 0, 0, 0.1);
     transition: box-shadow 0.1s linear;
 }
 
 #navigation>.element:first-of-type {
     margin-top: 0px;
-}
-
-#navigation>#settings.element {
-    background: #F5F6FF;
 }
 
 #navigation>#settings.element>img {
@@ -158,7 +146,6 @@ img.container {
 
 #controls {
     z-index: 99999;
-    background: white;
     flex: 0 1 auto;
     -webkit-user-select: none;
     -webkit-app-region: drag;
@@ -166,7 +153,6 @@ img.container {
     user-select: none;
     padding: 5px;
     text-align: center;
-    border-bottom: 1px solid #eff2fa;
 }
 
 #controls>.title {
@@ -181,7 +167,6 @@ img.container {
     height: 12px;
     border-radius: 50%;
     float: right;
-    border: 5px solid white;
     -webkit-app-region: no-drag;
     opacity: 0.6;
     transition: opacity 0.1s linear;
@@ -223,11 +208,9 @@ img.container {
     top: 45%;
     transform: translate(-50%, -50%);
     min-width: 300px;
-    background: #eff2fa;
 }
 
 #message-box .mb-buttons {
-    border-top: 1px solid white;
     display: block;
     text-align: right;
     margin-top: 15px;
@@ -242,15 +225,12 @@ img.container {
     bottom: 1px;
     z-index: 999999;
     border-radius: 8px;
-    box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.2);
     pointer-events: none;
 }
 
 button {
-    background: white;
     padding: 10px;
     margin: 5px;
-    border: 1px solid #eff2fa;
     border-radius: 5px;
     transition: box-shadow 0.1s linear;
 }
@@ -260,18 +240,12 @@ button:hover {
 }
 
 input[type="text"] {
-    background: white;
     padding: 10px;
     margin: 5px;
-    border: 1px solid white;
     border-radius: 5px;
     transition: border 0.1s linear;
     outline: 0;
     width: 300px;
-}
-
-input[type="text"]:focus {
-    border: 1px solid rgba(85, 85, 85, 0.3);
 }
 
 .input {
@@ -315,7 +289,6 @@ input[type="radio"]::before {
     left: -5px;
     top: -4px;
     position: absolute;
-    background: white;
     border: 1px solid rgba(0, 0, 0, 0.08);
     transition: box-shadow 0.1s linear;
 }
@@ -329,7 +302,6 @@ input[type="radio"]::after {
     left: 1px;
     top: 2px;
     position: absolute;
-    background: white;
 }
 
 input[type="radio"]:checked {
@@ -347,95 +319,8 @@ input[type="radio"]:hover::before {
 ::selection {
     color: white;
     background: rgb(0, 135, 193);
-  }
+}
 
-@media (prefers-color-scheme: dark) {
-
-    html,
-    body {
-        background: #333;
-        color: #bbb;
-    }
-
-    .container {
-        background: #222;
-    }
-
-    .card {
-        /*background: transparent;*/
-        background: #333;
-    }
-
-    .card>.title {
-        background: #222;
-    }
-
-    #navigation {
-        background: #222;
-    }
-
-    #navigation>.separator {
-        background: #333;
-    }
-
-    #navigation>.element {
-        box-shadow: 0 9px 19px rgba(0, 0, 0, 0.2), 0 15px 12px rgba(0, 0, 0, 0.2);
-    }
-
-    #navigation>#settings.element {
-        background: #333;
-    }
-
-    #navigation>#settings.element>img {
-        filter: invert(8%) sepia(8%) saturate(0%) hue-rotate(347deg) brightness(94%) contrast(100%);
-    }
-
-    #controls {
-        background: #222;
-        border-bottom: 1px solid #333;
-    }
-
-    #controls>span.button {
-        border: 5px solid #222;
-    }
-
-    #message-box>.container {
-        background: #333;
-    }
-
-    #message-box .mb-buttons {
-        border-top: 1px solid #222;
-    }
-
-    #vignette {
-        box-shadow: inset 0 0 2px rgb(255, 255, 255, 0.2);
-    }
-
-    button {
-        color: #bbb;
-        background: #222;
-        border: 1px solid rgb(51 51 51 / 50%);
-    }
-
-    input[type="text"] {
-        color: #bbb;
-        background: #222;
-        border: 1px solid #222;
-    }
-
-    input[type="text"]:focus {
-        border: 1px solid rgba(187, 187, 187, 0.3);
-    }
-
-    input[type="radio"]::before {
-        background: #222;
-    }
-
-    input[type="radio"]::after {
-        background: #222;
-    }
-
-    /*input[type="radio"]:checked::after {
-        background: #777;
-    }*/
+#dark-mode-toggle{
+    --dark-mode-toggle-icon-size: 1.25rem;
 }
