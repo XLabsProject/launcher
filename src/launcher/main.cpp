@@ -10,6 +10,14 @@
 
 namespace
 {
+	bool try_lock_termination_barrier()
+	{
+		static std::atomic_bool barrier{false};
+
+		auto expected = false;
+		return barrier.compare_exchange_strong(expected, true);
+	}
+
 	std::string get_appdata_path()
 	{
 		PWSTR path;
@@ -59,6 +67,11 @@ namespace
 		return strstr(GetCommandLineA(), "--xlabs-subprocess");
 	}
 
+	bool is_dedi()
+	{
+		return !is_subprocess() && (strstr(GetCommandLineA(), "-dedicated") || strstr(GetCommandLineA(), "-update"));
+	}
+
 	int run_subprocess(const utils::nt::library& process, const std::string& path)
 	{
 		const cef::cef_ui cef_ui{process, path};
@@ -74,7 +87,7 @@ namespace
 				return;
 			}
 
-			std::string arg{value.GetString(), value.GetStringLength()};
+			const std::string arg{value.GetString(), value.GetStringLength()};
 
 			static const std::unordered_map<std::string, std::string> arg_mapping = {
 				{"aw-sp", "-singleplayer"},
@@ -95,9 +108,53 @@ namespace
 				return;
 			}
 
+			if (!try_lock_termination_barrier())
+			{
+				return;
+			}
+
 			SetEnvironmentVariableA("XLABS_AW_INSTALL", aw_install->data());
 
 			const auto s1x_exe = get_appdata_path() + "data/s1x/s1x.exe";
+			utils::nt::launch_process(s1x_exe, mapped_arg->second);
+
+			cef_ui.close_browser();
+		});
+
+		cef_ui.add_command("launch-ghosts", [&cef_ui](const rapidjson::Value& value, auto&)
+		{
+			if (!value.IsString())
+			{
+				return;
+			}
+
+			const std::string arg{value.GetString(), value.GetStringLength()};
+
+			static const std::unordered_map<std::string, std::string> arg_mapping = {
+				{"ghosts-sp", "-singleplayer"},
+				{"ghosts-mp", "-multiplayer"},
+			};
+
+			const auto mapped_arg = arg_mapping.find(arg);
+			if (mapped_arg == arg_mapping.end())
+			{
+				return;
+			}
+
+			const auto aw_install = utils::properties::load("ghosts-install");
+			if (!aw_install)
+			{
+				return;
+			}
+
+			if (!try_lock_termination_barrier())
+			{
+				return;
+			}
+
+			SetEnvironmentVariableA("XLABS_GHOSTS_INSTALL", aw_install->data());
+
+			const auto s1x_exe = get_appdata_path() + "data/iw6x/iw6x.exe";
 			utils::nt::launch_process(s1x_exe, mapped_arg->second);
 
 			cef_ui.close_browser();
@@ -175,7 +232,7 @@ namespace
 			}
 		});
 
-		cef_ui.add_command("get-channel", [&cef_ui](auto&, rapidjson::Document& response)
+		cef_ui.add_command("get-channel", [](auto&, rapidjson::Document& response)
 		{
 			const std::string channel = updater::is_main_channel() ? "main" : "dev";
 			response.SetString(channel, response.GetAllocator());
@@ -230,7 +287,11 @@ int CALLBACK WinMain(const HINSTANCE instance, HINSTANCE, LPSTR, int)
 		updater::run(path);
 #endif
 
-		show_window(lib, path);
+		if (!is_dedi())
+		{
+			show_window(lib, path);
+		}
+
 		return 0;
 	}
 	catch (updater::update_cancelled&)

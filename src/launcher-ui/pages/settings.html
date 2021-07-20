@@ -4,7 +4,7 @@
         <span class="content">
             <p>
                 <span class="two-grid">
-                    <span>Advanced Warfare installation</span>
+                    <span>Advanced Warfare Installation</span>
                     <span>
                         <span class="input">
                             <input type="text" id="aw-install" readonly>
@@ -16,7 +16,31 @@
 
             <p>
                 <span class="two-grid">
-                    <span>Update channel</span>
+                    <span>Ghosts Installation</span>
+                    <span>
+                        <span class="input">
+                            <input type="text" id="ghosts-install" readonly>
+                            <button id="ghosts-browse">Browse</button>
+                        </span>
+                    </span>
+                </span>
+            </p>
+
+            <p>
+                <span class="two-grid">
+                    <span>Modern Warfare 2 Installation</span>
+                    <span>
+                        <span class="input">
+                            <input type="text" id="mw2-install" readonly>
+                            <button id="mw2-browse">Browse</button>
+                        </span>
+                    </span>
+                </span>
+            </p>
+
+            <p>
+                <span class="two-grid">
+                    <span>Update Channel</span>
                     <span>
                         <span class="input">
                             <input type="radio" id="channel-main" name="channel" value="channel-main">
@@ -26,6 +50,21 @@
                             <input type="radio" id="channel-dev" name="channel" value="channel-dev">
                             <label for="channel-dev">Experimental</label>
                         </span>
+                    </span>
+                </span>
+            </p>
+
+            <p>
+                <span class="two-grid">
+                    <span>Launcher Theme</span>
+                    <span>
+                        <dark-mode-toggle
+                            id="dark-mode-toggle"
+                            appearance="toggle"
+                            dark="Dark mode"
+                            light="Light mode"
+                            permanent="true"
+                        ></dark-mode-toggle>
                     </span>
                 </span>
             </p>
@@ -71,12 +110,12 @@
 
             window.showMessageBox("⚠ Warning",
                 text, ["Yes", "Cancel"]).then(index => {
-                    if (index == 0) {
-                        executeCommand('switch-channel', newChannel);
-                    } else {
-                        checkCurrentChannelRadio();
-                    }
-                });
+                if (index == 0) {
+                    executeCommand('switch-channel', newChannel);
+                } else {
+                    checkCurrentChannelRadio();
+                }
+            });
         });
     }
 
@@ -93,18 +132,56 @@
         nodes[i].onclick = handleChannelChange;
     }
 
+    // set textbox path and save property to json
     document.querySelector("#aw-browse").onclick = function () {
         executeCommand('browse-folder').then(folder => {
             if (folder) {
                 document.querySelector("#aw-install").value = folder;
-                executeCommand('set-property', {'aw-install': folder});
+                executeCommand('set-property', {
+                    'aw-install': folder
+                });
             }
         });
     }
 
+    document.querySelector("#ghosts-browse").onclick = function () {
+        executeCommand('browse-folder').then(folder => {
+            if (folder) {
+                document.querySelector("#ghosts-install").value = folder;
+                executeCommand('set-property', {
+                    'ghosts-install': folder
+                });
+            }
+        });
+    }
+
+    document.querySelector("#mw2-browse").onclick = function () {
+        executeCommand('browse-folder').then(folder => {
+            if (folder) {
+                document.querySelector("#mw2-install").value = folder;
+                executeCommand('set-property', {
+                    'mw2-install': folder
+                });
+            }
+        });
+    }
+
+    // get path already set in config if path is set
     executeCommand('get-property', 'aw-install').then(folder => {
-        if(folder) {
+        if (folder) {
             document.querySelector("#aw-install").value = folder;
+        }
+    });
+
+    executeCommand('get-property', 'ghosts-install').then(folder => {
+        if (folder) {
+            document.querySelector("#ghosts-install").value = folder;
+        }
+    });
+
+    executeCommand('get-property', 'mw2-install').then(folder => {
+        if (folder) {
+            document.querySelector("#mw2-install").value = folder;
         }
     });
 </script>

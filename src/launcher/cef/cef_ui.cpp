@@ -72,7 +72,11 @@ namespace cef
 		//settings.single_process = TRUE;
 		//settings.windowless_rendering_enabled = TRUE;
 		//settings.pack_loading_disabled = FALSE;
-		settings.remote_debugging_port = 12345;
+
+		if (!updater::is_main_channel())
+		{
+			settings.remote_debugging_port = 12345;
+		}
 
 #ifdef DEBUG
 		settings.log_severity = LOGSEVERITY_VERBOSE;
@@ -97,8 +101,8 @@ namespace cef
 
 		CefWindowInfo window_info;
 		window_info.SetAsPopup(nullptr, "X Labs"s + (updater::is_main_channel() ? "" : " (DEV-BUILD)"));
-		window_info.width = 800; //GetSystemMetrics(SM_CXVIRTUALSCREEN);
-		window_info.height = 500 - 25; //GetSystemMetrics(SM_CYVIRTUALSCREEN);
+		window_info.width = 900; //GetSystemMetrics(SM_CXVIRTUALSCREEN);
+		window_info.height = 510; //GetSystemMetrics(SM_CYVIRTUALSCREEN);
 		window_info.x = (GetSystemMetrics(SM_CXSCREEN) - window_info.width) / 2;
 		window_info.y = (GetSystemMetrics(SM_CYSCREEN) - window_info.height) / 2;
 		window_info.style = WS_POPUP | WS_THICKFRAME | WS_CAPTION;

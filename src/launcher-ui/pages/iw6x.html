@@ -1,17 +1,60 @@
 <div class="grid">
-    <span id="data" class="container card">
-        <span class="title">IW6x</span>
-        <span class="content">Soon...</span>
+    <span class="a container card" id="ghosts-sp">
+        <span class="title">Singleplayer</span>
+        <span class="content img" style="background-image: url(./img/iw6x-sp.png)"></span>
     </span>
+
+    <span class="a container card" id="ghosts-mp">
+        <span class="title">Multiplayer</span>
+        <span class="content img" style="background-image: url(./img/iw6x-mp.png)"></span>
+    </span>
+    <span></span>
+    <span></span>
 </div>
 
 <style>
     #content>.grid {
-        display: flex;
-        width: 100%;
-    }
-
-    #data {
         flex: 1 1 auto;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-auto-rows: minmax(100px, auto);
     }
 </style>
+
+<script>
+    (function () {
+        function launchGhostsVariant(id) {
+            executeCommand('launch-ghosts', id);
+        }
+
+        function showConfigureWarning() {
+            window.showMessageBox("⚙ IW6x not configured",
+                "You have not configured your <b>Ghosts installation</b> path.<br><br>Please do so in the settings!",
+                ["Ok"]).then(index => {
+                window.showSettings();
+            });
+        }
+
+        function handleGhosts() {
+            const el = this;
+            const id = el.id;
+
+            executeCommand('get-property', 'ghosts-install').then(folder => {
+                console.log(folder);
+                if (!folder) {
+                    showConfigureWarning();
+                }
+                else {
+                    launchGhostsVariant(id);
+                }
+            });
+        }
+
+        const ghostsNnodes = document.querySelectorAll("#content>.grid>.a");
+        for (var i = 0; i < ghostsNnodes.length; ++i) {
+            const node = ghostsNnodes[i];
+            node.onclick = handleGhosts;
+        }
+    })();
+</script>
