@@ -53,21 +53,6 @@
                     </span>
                 </span>
             </p>
-
-            <p>
-                <span class="two-grid">
-                    <span>Launcher Theme</span>
-                    <span>
-                        <dark-mode-toggle
-                            id="dark-mode-toggle"
-                            appearance="toggle"
-                            dark="Dark mode"
-                            light="Light mode"
-                            permanent="true"
-                        ></dark-mode-toggle>
-                    </span>
-                </span>
-            </p>
         </span>
     </span>
 </div>
@@ -110,12 +95,12 @@
 
             window.showMessageBox("⚠ Warning",
                 text, ["Yes", "Cancel"]).then(index => {
-                if (index == 0) {
-                    executeCommand('switch-channel', newChannel);
-                } else {
-                    checkCurrentChannelRadio();
-                }
-            });
+                    if (index == 0) {
+                        executeCommand('switch-channel', newChannel);
+                    } else {
+                        checkCurrentChannelRadio();
+                    }
+                });
         });
     }
 
