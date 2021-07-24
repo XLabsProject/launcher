@@ -21,7 +21,7 @@ img {
 }
 
 #container {
-z-index: 100;
+    z-index: 100;
 }
 
 #background {
@@ -30,9 +30,7 @@ z-index: 100;
     left: -100px;
     right: -100px;
     bottom: -100px;
-    background: linear-gradient(
-        135deg
-        , rgba(6,10,15,1) 32%, rgba(26,43,65,1) 50%, rgba(79,109,148,1) 59%, rgba(157,174,182,1) 65%, rgba(65,82,91,1) 78%, rgba(42,55,63,1) 89%, rgba(14,14,14,1) 100%);
+    background: linear-gradient( 135deg, rgba(6, 10, 15, 1) 32%, rgba(26, 43, 65, 1) 50%, rgba(79, 109, 148, 1) 59%, rgba(157, 174, 182, 1) 65%, rgba(65, 82, 91, 1) 78%, rgba(42, 55, 63, 1) 89%, rgba(14, 14, 14, 1) 100%);
     filter: blur(50px);
     box-shadow: inset 0px 0px 84px 223px rgb(51 51 51 / 50%);
     display: none;
@@ -245,7 +243,7 @@ input[type="text"] {
     border-radius: 5px;
     transition: border 0.1s linear;
     outline: 0;
-    width: 300px;
+    width: 250px;
 }
 
 .input {
@@ -260,7 +258,6 @@ input[type="text"] {
     display: inline-flex;
     align-items: center;
 }
-
 
 .two-grid>:first-child {
     text-align: left;
@@ -321,6 +318,6 @@ input[type="radio"]:hover::before {
     background: rgb(0, 135, 193);
 }
 
-#dark-mode-toggle{
+#dark-mode-toggle {
     --dark-mode-toggle-icon-size: 1.25rem;
 }
