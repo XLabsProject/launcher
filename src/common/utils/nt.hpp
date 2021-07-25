@@ -111,5 +111,9 @@ namespace utils::nt
 
 	void launch_process(const std::string& process, std::string command_line);
 	void relaunch_self(std::string command_line = GetCommandLineA());
+
+	unsigned long get_parent_pid();
+	bool wait_for_process(unsigned long pid);
+
 	__declspec(noreturn) void terminate(uint32_t code = 0);
 }

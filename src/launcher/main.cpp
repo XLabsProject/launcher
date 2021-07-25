@@ -72,6 +72,19 @@ namespace
 		return !is_subprocess() && (strstr(GetCommandLineA(), "-dedicated") || strstr(GetCommandLineA(), "-update"));
 	}
 
+	void run_watchdog()
+	{
+		std::thread([]()
+		{
+			const auto parent = utils::nt::get_parent_pid();
+			if (utils::nt::wait_for_process(parent))
+			{
+				std::this_thread::sleep_for(3s);
+				utils::nt::terminate();
+			}
+		}).detach();
+	}
+
 	int run_subprocess(const utils::nt::library& process, const std::string& path)
 	{
 		const cef::cef_ui cef_ui{process, path};
@@ -277,6 +290,7 @@ int CALLBACK WinMain(const HINSTANCE instance, HINSTANCE, LPSTR, int)
 
 		if (is_subprocess())
 		{
+			run_watchdog();
 			return run_subprocess(lib, path);
 		}
 
