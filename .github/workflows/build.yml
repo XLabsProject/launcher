@@ -37,10 +37,6 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
 
-      - name: Download CEF
-        run: .\get-cef.ps1
-        shell: powershell
-
       - name: Generate project files
         run: tools/premake5 vs2019 --ci-build
 
