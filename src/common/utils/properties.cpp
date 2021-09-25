@@ -10,40 +10,17 @@
 #include "com.hpp"
 #include "string.hpp"
 
-namespace utils::properties
+namespace utils
 {
 	namespace
 	{
-		std::string get_appdata_path()
-		{
-			PWSTR path;
-			if (!SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &path)))
-			{
-				throw std::runtime_error("Failed to read APPDATA path!");
-			}
-
-			auto _ = gsl::finally([&path]()
-			{
-				CoTaskMemFree(path);
-			});
-
-			return string::convert(path) + "/xlabs/";
-		}
-
-		const std::string& get_properties_file()
-		{
-			static const auto props = get_appdata_path() + "user/properties.json";
-			return props;
-		}
-
-		rapidjson::Document load_properties()
+		rapidjson::Document load_properties(const std::string& filePath)
 		{
 			rapidjson::Document default_doc{};
 			default_doc.SetObject();
 
 			std::string data{};
-			const auto& props = get_properties_file();
-			if (!io::read_file(props, &data))
+			if (!io::read_file(filePath, &data))
 			{
 				return default_doc;
 			}
@@ -58,7 +35,7 @@ namespace utils::properties
 			return doc;
 		}
 
-		void store_properties(const rapidjson::Document& doc)
+		void store_properties(const std::string& filePath, const rapidjson::Document& doc)
 		{
 			rapidjson::StringBuffer buffer{};
 			rapidjson::Writer<rapidjson::StringBuffer, rapidjson::Document::EncodingType, rapidjson::ASCII<>>
@@ -66,23 +43,32 @@ namespace utils::properties
 			doc.Accept(writer);
 
 			const std::string json(buffer.GetString(), buffer.GetLength());
-
-			const auto& props = get_properties_file();
-			io::write_file(props, json);
+			
+			io::write_file(filePath, json);
 		}
 	}
 
-	std::unique_lock<named_mutex> lock()
+    Properties::Properties()
+        : file_path("properties.json")
+    {
+    }
+
+    Properties::Properties(std::string filePath)
+        : file_path(std::move(filePath))
+    {
+    }
+
+	std::unique_lock<named_mutex> Properties::Lock()
 	{
 		static named_mutex mutex{"xlabs-properties-lock"};
 		std::unique_lock<named_mutex> lock{mutex};
 		return lock;
 	}
 
-	std::optional<std::string> load(const std::string& name)
-	{
-		const auto _ = lock();
-		const auto doc = load_properties();
+	std::optional<std::string> Properties::Load(const std::string& name) const
+    {
+		const auto _ = Lock();
+		const auto doc = load_properties(file_path);
 
 		if (!doc.HasMember(name))
 		{
@@ -98,10 +84,10 @@ namespace utils::properties
 		return {std::string{value.GetString(), value.GetStringLength()}};
 	}
 
-	void store(const std::string& name, const std::string& value)
-	{
-		const auto _ = lock();
-		auto doc = load_properties();
+	void Properties::Store(const std::string& name, const std::string& value) const
+    {
+		const auto _ = Lock();
+		auto doc = load_properties(file_path);
 
 		while (doc.HasMember(name))
 		{
@@ -116,6 +102,6 @@ namespace utils::properties
 
 		doc.AddMember(key, member, doc.GetAllocator());
 
-		store_properties(doc);
+		store_properties(file_path, doc);
 	}
 }

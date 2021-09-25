@@ -2,11 +2,14 @@
 
 #include "cef/cef_ui.hpp"
 #include "utils/nt.hpp"
+#include "utils/properties.hpp"
 
 class Launcher
 {
 public:
     static int Run(HINSTANCE instance);
+
+    inline static utils::Properties properties;
 
 private:
     static std::string GetAppdataPath();
