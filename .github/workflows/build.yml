@@ -66,7 +66,7 @@ jobs:
         with:
           name: ${{matrix.configuration}} CEF
           path: |
-            build/runtime/x64/${{matrix.configuration}}/*
+            build/runtime/data/*
 
   deploy:
     name: Deploy artifacts
@@ -124,7 +124,7 @@ jobs:
         run: rsync -avz ./ui/ ${{ secrets.XLABS_MASTER_SSH_USER }}@${{ secrets.XLABS_MASTER_SSH_ADDRESS }}:${{ env.XLABS_MASTER_PATH }}/launcher-ui/
 
       - name: Upload CEF binaries
-        run: rsync -avz ./cef/ ${{ secrets.XLABS_MASTER_SSH_USER }}@${{ secrets.XLABS_MASTER_SSH_ADDRESS }}:${{ env.XLABS_MASTER_PATH }}/cef/release/
+        run: rsync -avz ./cef/Release/ ${{ secrets.XLABS_MASTER_SSH_USER }}@${{ secrets.XLABS_MASTER_SSH_ADDRESS }}:${{ env.XLABS_MASTER_PATH }}/cef/release/
 
       - name: Upload launcher binary
         run: rsync -avz xlabs.exe ${{ secrets.XLABS_MASTER_SSH_USER }}@${{ secrets.XLABS_MASTER_SSH_ADDRESS }}:${{ env.XLABS_MASTER_PATH }}/
