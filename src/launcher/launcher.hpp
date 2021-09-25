@@ -6,8 +6,6 @@
 class Launcher
 {
 public:
-    static const std::string& GetUiPath();
-
     static int Run(HINSTANCE instance);
 
 private:
@@ -27,6 +25,6 @@ private:
     static void ShowLauncherWindow();
 
     inline static utils::nt::library lib;
-    inline static std::string base_path;
-    inline static std::string ui_path;
+    inline static std::filesystem::path base_path;
+    inline static std::filesystem::path ui_path;
 };

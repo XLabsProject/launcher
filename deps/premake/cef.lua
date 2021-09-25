@@ -69,14 +69,17 @@ function cef.project()
 		}
 
 		postbuildcommands {
-			"mkdir \"%{wks.location}runtime/%{cfg.platform}/%{cfg.buildcfg}/cef/\" 2> nul",
-			"mkdir \"%{wks.location}runtime/%{cfg.platform}/%{cfg.buildcfg}/cef/locales/\" 2> nul",
-			"copy /y \"%{wks.location}..\\deps\\cef\\%{cfg.buildcfg}\\*.dll\" \"%{wks.location}runtime\\%{cfg.platform}\\%{cfg.buildcfg}\\cef\\\"",
-			"copy /y \"%{wks.location}..\\deps\\cef\\%{cfg.buildcfg}\\*.bin\" \"%{wks.location}runtime\\%{cfg.platform}\\%{cfg.buildcfg}\\cef\\\"",
-			"copy /y \"%{wks.location}..\\deps\\cef\\Resources\\*.pak\" \"%{wks.location}runtime\\%{cfg.platform}\\%{cfg.buildcfg}\\cef\\\"",
-			"copy /y \"%{wks.location}..\\deps\\cef\\Resources\\*.dat\" \"%{wks.location}runtime\\%{cfg.platform}\\%{cfg.buildcfg}\\cef\\\"",
-			--"copy /y \"%{wks.location}..\\deps\\cef\\Resources\\locales\\*.pak\" \"%{wks.location}runtime\\%{cfg.platform}\\%{cfg.buildcfg}\\cef\\locales\\\"",
-			"copy /y \"%{wks.location}..\\deps\\cef\\Resources\\locales\\en-US.pak\" \"%{wks.location}runtime\\%{cfg.platform}\\%{cfg.buildcfg}\\cef\\locales\\\"",
+			"mkdir \"%{wks.location}runtime/\" 2> nul",
+			"mkdir \"%{wks.location}runtime/data/\" 2> nul",
+			"mkdir \"%{wks.location}runtime/data/cef/\" 2> nul",
+			"mkdir \"%{wks.location}runtime/data/cef/%{cfg.buildcfg}/\" 2> nul",
+			"mkdir \"%{wks.location}runtime/data/cef/%{cfg.buildcfg}/locales/\" 2> nul",
+			"copy /y \"%{wks.location}..\\deps\\cef\\%{cfg.buildcfg}\\*.dll\" \"%{wks.location}runtime\\data\\cef\\%{cfg.buildcfg}\\\"",
+			"copy /y \"%{wks.location}..\\deps\\cef\\%{cfg.buildcfg}\\*.bin\" \"%{wks.location}runtime\\data\\cef\\%{cfg.buildcfg}\\\"",
+			"copy /y \"%{wks.location}..\\deps\\cef\\Resources\\*.pak\" \"%{wks.location}runtime\\data\\cef\\%{cfg.buildcfg}\\\"",
+			"copy /y \"%{wks.location}..\\deps\\cef\\Resources\\*.dat\" \"%{wks.location}runtime\\data\\cef\\%{cfg.buildcfg}\\\"",
+			--"copy /y \"%{wks.location}..\\deps\\cef\\Resources\\locales\\*.pak\" \"%{wks.location}runtime\\data\\cef\\%{cfg.buildcfg}\\locales\\\"",
+			"copy /y \"%{wks.location}..\\deps\\cef\\Resources\\locales\\en-US.pak\" \"%{wks.location}runtime\\data\\cef\\%{cfg.buildcfg}\\locales\\\"",
 		}
 
 		linkoptions { "-IGNORE:4221", "-IGNORE:4006" }

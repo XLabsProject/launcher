@@ -38,24 +38,26 @@ std::string Launcher::GetAppdataPath()
     return utils::string::convert(path) + "/xlabs/";
 }
 
-const std::string& Launcher::GetUiPath()
-{
-    return ui_path;
-}
-
 void Launcher::SetWorkingDirectory()
 {
-    SetCurrentDirectoryA(base_path.data());
+	SetCurrentDirectoryA(base_path.string().data());
 }
 
 void Launcher::PrepareEnvironment(HINSTANCE instance)
 {
-    lib = utils::nt::library(instance);
-    //set_working_directory();
+	lib = utils::nt::library(instance);
 
-    const auto appDataPath = GetAppdataPath();
-    base_path = appDataPath;
-    ui_path = appDataPath + "data/launcher-ui";
+#ifdef CI_BUILD
+	const auto appDataPath = absolute(std::filesystem::path(GetAppdataPath()));
+	base_path = appDataPath;
+	ui_path = (appDataPath / "data/launcher-ui");
+
+	SetWorkingDirectory();
+#else
+    const std::filesystem::path basePath = absolute(std::filesystem::path("runtime"));
+	base_path = basePath;
+	ui_path = absolute(basePath / std::filesystem::path("../../src/launcher-ui/"));
+#endif
 }
 
 void Launcher::EnableDpiAwareness()
@@ -146,8 +148,8 @@ void Launcher::AddCommands(cef::cef_ui& cef_ui)
 
         SetEnvironmentVariableA("XLABS_AW_INSTALL", aw_install->data());
 
-        const auto s1x_exe = base_path + "data/s1x/s1x.exe";
-        utils::nt::launch_process(s1x_exe, mapped_arg->second);
+        const auto s1x_exe = base_path / "data/s1x/s1x.exe";
+        utils::nt::launch_process(s1x_exe.string(), mapped_arg->second);
 
         cef_ui.close_browser();
     });
@@ -185,8 +187,8 @@ void Launcher::AddCommands(cef::cef_ui& cef_ui)
 
         SetEnvironmentVariableA("XLABS_GHOSTS_INSTALL", ghosts_install->data());
 
-        const auto iw6x_exe = base_path + "data/iw6x/iw6x.exe";
-        utils::nt::launch_process(iw6x_exe, mapped_arg->second);
+        const auto s1x_exe = base_path / "data/iw6x/iw6x.exe";
+        utils::nt::launch_process(s1x_exe.string(), mapped_arg->second);
 
         cef_ui.close_browser();
     });
@@ -216,6 +218,8 @@ void Launcher::AddCommands(cef::cef_ui& cef_ui)
             return;
         }
 
+        const std::filesystem::path mw2_install_path(mw2_install.value());
+
         if (!TryLockTerminationBarrier())
         {
             return;
@@ -226,8 +230,8 @@ void Launcher::AddCommands(cef::cef_ui& cef_ui)
         const updater::file_updater file_updater{updater_ui, mw2_install.value() + "/", ""};
         file_updater.update_iw4x_if_necessary();
 
-        const auto iw4x_exe = mw2_install.value() + "/iw4x.exe";
-        utils::nt::launch_process(iw4x_exe, mapped_arg->second);
+        const auto iw4x_exe = mw2_install_path / "iw4x.exe";
+        utils::nt::launch_process(iw4x_exe.string(), mapped_arg->second);
 
         cef_ui.close_browser();
     });
@@ -331,10 +335,10 @@ void Launcher::AddCommands(cef::cef_ui& cef_ui)
 
 void Launcher::ShowLauncherWindow()
 {
-    cef::cef_ui cef_ui{lib, base_path};
-    AddCommands(cef_ui);
-    cef_ui.create(ui_path, "main.html");
-    cef_ui.work();
+	cef::cef_ui cef_ui{ lib, base_path.string() };
+	AddCommands(cef_ui);
+	cef_ui.create(ui_path.string(), "main.html");
+	cef_ui.work();
 }
 
 int Launcher::Run(HINSTANCE instance)
@@ -353,9 +357,10 @@ int Launcher::Run(HINSTANCE instance)
 
 #if defined(CI_BUILD) && !defined(DEBUG)
 		RunAsSingleton();
+
         if (!strstr(GetCommandLineA(), "-noupdate"))
         {
-            updater::run(base_path);
+		    updater::run(base_path.string() + "/");
         }
 #endif
 
