@@ -51,6 +51,7 @@ void Launcher::PrepareEnvironment(HINSTANCE instance)
 	const auto appDataPath = absolute(std::filesystem::path(GetAppdataPath()));
 	base_path = appDataPath;
 	ui_path = (appDataPath / "data/launcher-ui");
+	download_path = appDataPath;
 	properties = utils::Properties((appDataPath / "user/properties.json").string());
 
 	SetWorkingDirectory();
@@ -58,6 +59,7 @@ void Launcher::PrepareEnvironment(HINSTANCE instance)
     const std::filesystem::path basePath = absolute(std::filesystem::path("runtime"));
 	base_path = basePath;
 	ui_path = absolute(basePath / std::filesystem::path("../../src/launcher-ui/"));
+	download_path = basePath / "download";
 	properties = utils::Properties((basePath / "user/properties.json").string());
 #endif
 }
@@ -362,7 +364,7 @@ int Launcher::Run(HINSTANCE instance)
 
         if (!strstr(GetCommandLineA(), "-noupdate"))
         {
-		    updater::run(base_path.string() + "/");
+		    updater::run(download_path.string() + "/");
         }
 #endif
 

@@ -30,4 +30,5 @@ private:
     inline static utils::nt::library lib;
     inline static std::filesystem::path base_path;
     inline static std::filesystem::path ui_path;
+    inline static std::filesystem::path download_path;
 };
