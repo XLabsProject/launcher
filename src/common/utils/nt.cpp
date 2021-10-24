@@ -1,6 +1,9 @@
 #include "nt.hpp"
+#include <TlHelp32.h>
 #include <delayimp.h>
 #pragma comment(lib, "delayimp.lib")
+
+#include <gsl/gsl>
 
 namespace utils::nt
 {
@@ -191,7 +194,7 @@ namespace utils::nt
 					if (ordinal_number > 0xFFFF) continue;
 
 					if (GetProcAddress(other_module.module_, reinterpret_cast<char*>(ordinal_number)) ==
-						target_function)
+						FARPROC(target_function))
 					{
 						return reinterpret_cast<void**>(&thunk_data->u1.Function);
 					}
@@ -279,6 +282,54 @@ namespace utils::nt
 	{
 		const utils::nt::library self;
 		launch_process(self.get_path(), std::move(command_line));
+	}
+
+	unsigned long get_parent_pid()
+	{
+		const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+		if (snapshot == INVALID_HANDLE_VALUE) return 0;
+
+		const auto _ = gsl::finally([&]()
+		{
+			CloseHandle(snapshot);
+		});
+
+		PROCESSENTRY32 pe32;
+		ZeroMemory(&pe32, sizeof(pe32));
+		pe32.dwSize = sizeof(pe32);
+
+		if (!Process32First(snapshot, &pe32))
+		{
+			return 0;
+		}
+
+		const auto pid = GetCurrentProcessId();
+		do
+		{
+			if (pe32.th32ProcessID == pid)
+			{
+				return pe32.th32ParentProcessID;
+			}
+		} while (Process32Next(snapshot, &pe32));
+
+		return 0;
+	}
+
+	bool wait_for_process(const unsigned long pid)
+	{
+		auto* const process_handle = OpenProcess(SYNCHRONIZE, FALSE, pid);
+		if (!process_handle)
+		{
+			return false;
+		}
+
+		const auto _ = gsl::finally([&]()
+		{
+			CloseHandle(process_handle);
+		});
+
+		WaitForSingleObject(process_handle, INFINITE);
+		return true;
 	}
 
 	__declspec(noreturn) void terminate(const uint32_t code)
