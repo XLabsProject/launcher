@@ -154,8 +154,8 @@ namespace
 				return;
 			}
 
-			const auto aw_install = utils::properties::load("ghosts-install");
-			if (!aw_install)
+			const auto ghosts_install = utils::properties::load("ghosts-install");
+			if (!ghosts_install)
 			{
 				return;
 			}
@@ -165,7 +165,7 @@ namespace
 				return;
 			}
 
-			SetEnvironmentVariableA("XLABS_GHOSTS_INSTALL", aw_install->data());
+			SetEnvironmentVariableA("XLABS_GHOSTS_INSTALL", ghosts_install->data());
 
 			const auto s1x_exe = get_appdata_path() + "data/iw6x/iw6x.exe";
 			utils::nt::launch_process(s1x_exe, mapped_arg->second);
