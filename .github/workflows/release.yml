@@ -11,10 +11,10 @@ jobs:
     name: Merge Release
     steps:
       - name: Check out files
+        if: github.event.pull_request.merged
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0
-          submodules: true
+          submodules: false
           lfs: false
 
       # Set up committer info and GPG key
@@ -48,27 +48,18 @@ jobs:
             "${{ github.event.pull_request.merge_commit_sha }}"
           git push origin --tags
 
-      - name: Install SSH key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.XLABS_CI_GITHUB_PRIVATE_KEY }}
-          known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
-
-      - name: Add known hosts
-        run: ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-
-      - name: Merge master into develop
+      - name: Create Pull Request
         if: github.event.pull_request.merged
-        run: |
-          git config user.name "${{ secrets.XLABS_CI_NAME }}"
-          git config user.email "${{ secrets.XLABS_CI_EMAIL }}"
-          git fetch --all
-          git checkout develop
-          git reset --hard origin/develop
-          git submodule update --init
-          git merge origin/master
-          git remote set-url origin git@github.com:${{ github.repository }}.git
-          git push origin
+        uses: repo-sync/pull-request@v2
+        with:
+          github_token: ${{ secrets.XLABS_CI_GITHUB_TOKEN }}
+          source_branch: "master"
+          destination_branch: "develop"
+          pr_allow_empty: true
+          pr_body: |
+            This Pull Request merges the release of X Labs Launcher ${{ steps.extract_version.outputs.version }} and was [automatically created by a workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) triggered by @${{ github.actor }}.
+          pr_title: Merge release ${{ steps.extract_version.outputs.version }}
+          pr_label: release
 
 
   notify:
