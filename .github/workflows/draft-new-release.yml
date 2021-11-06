@@ -41,6 +41,7 @@ jobs:
           github_token: ${{ secrets.XLABS_CI_GITHUB_TOKEN }}
           source_branch: "develop"
           destination_branch: "master"
+          pr_allow_empty: true
           pr_body: |
             This Pull Request is for the release of X Labs Launcher ${{ steps.normalize_version.outputs.version }} and was [automatically created by a workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) triggered by @${{ github.actor }}.
           pr_title: Release ${{ steps.normalize_version.outputs.version }}
