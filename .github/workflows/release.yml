@@ -52,7 +52,7 @@ jobs:
         run: |
           git config user.name "${{ secrets.XLABS_CI_NAME }}"
           git config user.email "${{ secrets.XLABS_CI_EMAIL }}"
-          git fetch --all --unshallow
+          git fetch --unshallow --all
           git checkout develop
           git reset --hard origin/develop
           git merge origin/master
