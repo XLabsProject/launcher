@@ -58,7 +58,7 @@ jobs:
           git reset --hard origin/develop
           git submodule update --init
           git merge origin/master
-          git push origin --tags
+          git push origin
 
 
   notify:
