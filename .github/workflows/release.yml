@@ -47,16 +47,15 @@ jobs:
             "${{ github.event.pull_request.merge_commit_sha }}"
           git push origin --tags
 
-      - name: Create Pull Request
-        uses: repo-sync/pull-request@v2
-        with:
-          github_token: ${{ secrets.XLABS_CI_GITHUB_TOKEN }}
-          source_branch: "master"
-          destination_branch: "develop"
-          pr_body: |
-            This Pull Request merges the release of X Labs Launcher ${{ steps.extract_version.outputs.version }} and was [automatically created by a workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) triggered by @${{ github.actor }}.
-          pr_title: Merge release ${{ steps.extract_version.outputs.version }}
-          pr_label: release
+      - name: Merge master into develop
+        if: github.event.pull_request.merged
+        run: |
+          git config user.name "${{ secrets.XLABS_CI_NAME }}"
+          git config user.email "${{ secrets.XLABS_CI_EMAIL }}"
+          git fetch --all
+          git checkout develop
+          git merge --ff origin/master
+          git push origin --tags
 
 
   notify:
