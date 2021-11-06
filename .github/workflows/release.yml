@@ -54,7 +54,8 @@ jobs:
           git config user.email "${{ secrets.XLABS_CI_EMAIL }}"
           git fetch --all
           git checkout develop
-          git merge --ff origin/master
+          git reset --hard origin/develop
+          git merge origin/master
           git push origin --tags
 
 
