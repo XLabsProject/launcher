@@ -48,18 +48,6 @@ jobs:
             "${{ github.event.pull_request.merge_commit_sha }}"
           git push origin --tags
 
-      - name: Install SSH key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.XLABS_CI_SSH_PRIVATE_KEY }}
-          known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
-
-      - name: Add known hosts
-        run: ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-
-      - name: Test SSH access
-        run: ssh -T git@github.com
-
       - name: Merge master into develop
         if: github.event.pull_request.merged
         run: |
@@ -70,7 +58,7 @@ jobs:
           git reset --hard origin/develop
           git submodule update --init
           git merge origin/master
-          git remote set-url origin git@github.com:${{ env.GITHUB_REPOSITORY }}.git
+          git remote set-url origin https://${{ secrets.XLABS_CI_NAME }}:${{ secrets.XLABS_CI_GITHUB_TOKEN }}@github.com/${{ env.GITHUB_REPOSITORY }}.git
           git push origin
 
 
