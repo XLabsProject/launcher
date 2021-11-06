@@ -57,6 +57,9 @@ jobs:
       - name: Add known hosts
         run: ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
+      - name: Test SSH access
+        run: ssh -T git@github.com
+
       - name: Merge master into develop
         if: github.event.pull_request.merged
         run: |
@@ -68,7 +71,6 @@ jobs:
           git submodule update --init
           git merge origin/master
           git remote set-url origin git@github.com:${{ env.GITHUB_REPOSITORY }}.git
-          git remote -v
           git push origin
 
 
