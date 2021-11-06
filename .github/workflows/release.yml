@@ -59,6 +59,7 @@ jobs:
           git submodule update --init
           git merge origin/master
           git remote set-url origin "https://${{ secrets.XLABS_CI_USERNAME }}:${{ secrets.XLABS_CI_GITHUB_TOKEN }}@github.com/${{ env.GITHUB_REPOSITORY }}.git"
+          git remote -v
           git push origin
 
 
