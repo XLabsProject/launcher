@@ -13,7 +13,8 @@ jobs:
       - name: Check out files
         uses: actions/checkout@v2
         with:
-          submodules: false
+          fetch-depth: 0
+          submodules: true
           lfs: false
 
       # Set up committer info and GPG key
@@ -52,9 +53,10 @@ jobs:
         run: |
           git config user.name "${{ secrets.XLABS_CI_NAME }}"
           git config user.email "${{ secrets.XLABS_CI_EMAIL }}"
-          git fetch --unshallow --all
+          git fetch --all
           git checkout develop
           git reset --hard origin/develop
+          git submodule update --init
           git merge origin/master
           git push origin --tags
 
