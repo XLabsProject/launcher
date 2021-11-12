@@ -298,7 +298,7 @@ int CALLBACK WinMain(const HINSTANCE instance, HINSTANCE, LPSTR, int)
 
 #if defined(CI_BUILD) && !defined(DEBUG)
 		run_as_singleton();
-		updater::run(path);
+		//updater::run(path);
 #endif
 
 		if (!is_dedi())
