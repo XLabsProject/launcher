@@ -167,8 +167,48 @@ namespace
 
 			SetEnvironmentVariableA("XLABS_GHOSTS_INSTALL", ghosts_install->data());
 
-			const auto s1x_exe = get_appdata_path() + "data/iw6x/iw6x.exe";
-			utils::nt::launch_process(s1x_exe, mapped_arg->second);
+			const auto iw6x_exe = get_appdata_path() + "data/iw6x/iw6x.exe";
+			utils::nt::launch_process(iw6x_exe, mapped_arg->second);
+
+			cef_ui.close_browser();
+		});
+
+		cef_ui.add_command("launch-mw2", [&cef_ui](const rapidjson::Value& value, auto&)
+		{
+			if (!value.IsString())
+			{
+				return;
+			}
+
+			const std::string arg{value.GetString(), value.GetStringLength()};
+
+			static const std::unordered_map<std::string, std::string> arg_mapping = {
+				{"mw2-mp", "-multiplayer"},
+			};
+
+			const auto mapped_arg = arg_mapping.find(arg);
+			if (mapped_arg == arg_mapping.end())
+			{
+				return;
+			}
+
+			const auto mw2_install = utils::properties::load("mw2-install");
+			if (!mw2_install)
+			{
+				return;
+			}
+
+			if (!try_lock_termination_barrier())
+			{
+				return;
+			}
+
+			//SetEnvironmentVariableA("XLABS_IW4_INSTALL", mw2_install->data());
+
+			const auto iw4x_exe = mw2_install.value() + "\\iw4x.exe";
+			const auto dll_search_path = get_appdata_path() + "data/iw4x";
+
+			utils::nt::launch_process_sussy(iw4x_exe, mapped_arg->second, dll_search_path);
 
 			cef_ui.close_browser();
 		});
