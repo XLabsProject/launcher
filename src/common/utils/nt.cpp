@@ -278,8 +278,9 @@ namespace utils::nt
 		if (process_info.hProcess && process_info.hProcess != INVALID_HANDLE_VALUE) CloseHandle(process_info.hProcess);
 	}
 
-	void launch_process_sussy(const std::string& process, std::string command_line, std::string dll_search_path)
+	void launch_process_with_dll_search_path(const std::string& process, std::string command_line, std::string dll_search_path)
 	{
+
 		STARTUPINFOA startup_info;
 		PROCESS_INFORMATION process_info;
 

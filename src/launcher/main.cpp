@@ -7,6 +7,8 @@
 #include <utils/named_mutex.hpp>
 #include <utils/exit_callback.hpp>
 #include <utils/properties.hpp>
+#include <updater/file_updater.hpp>
+#include <updater/updater_ui.hpp>
 
 namespace
 {
@@ -203,12 +205,18 @@ namespace
 				return;
 			}
 
+			// We update iw4x upon launch
+			updater::updater_ui updater_ui{};
+			const updater::file_updater file_updater{ updater_ui, mw2_install.value(), ""};
+
+			file_updater.update_iw4x_if_necessary(mw2_install.value());
+
 			//SetEnvironmentVariableA("XLABS_IW4_INSTALL", mw2_install->data());
 
 			const auto iw4x_exe = mw2_install.value() + "\\iw4x.exe";
 			const auto dll_search_path = get_appdata_path() + "data/iw4x";
 
-			utils::nt::launch_process_sussy(iw4x_exe, mapped_arg->second, dll_search_path);
+			utils::nt::launch_process_with_dll_search_path(iw4x_exe, mapped_arg->second, dll_search_path);
 
 			cef_ui.close_browser();
 		});

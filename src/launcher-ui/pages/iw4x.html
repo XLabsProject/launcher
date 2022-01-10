@@ -1,7 +1,7 @@
 <div class="grid">
     <span class="a container card" id="mw2-mp">
         <span class="title">Multiplayer</span>
-    <span class="content img" style="background-image: url(./img/iw6x-sp.png)"></span>
+    <span class="content img" style="background-image: url(./img/iw4x-mp.png)"></span>
     </span>
 </div>
 
@@ -33,7 +33,6 @@
             const id = el.id;
 
             executeCommand('get-property', 'mw2-install').then(folder => {
-                console.log(folder);
                 if (!folder) {
                     showConfigureWarning();
                 } else {
