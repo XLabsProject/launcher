@@ -278,28 +278,6 @@ namespace utils::nt
 		if (process_info.hProcess && process_info.hProcess != INVALID_HANDLE_VALUE) CloseHandle(process_info.hProcess);
 	}
 
-	void launch_process_with_dll_search_path(const std::string& process, std::string command_line, std::string dll_search_path)
-	{
-
-		STARTUPINFOA startup_info;
-		PROCESS_INFORMATION process_info;
-
-		ZeroMemory(&startup_info, sizeof(startup_info));
-		ZeroMemory(&process_info, sizeof(process_info));
-		startup_info.cb = sizeof(startup_info);
-
-		char current_dir[MAX_PATH];
-		GetCurrentDirectoryA(sizeof(current_dir), current_dir);
-		
-		library lib;
-		lib.set_dll_directory(dll_search_path.data());
-		CreateProcessA(process.data(), command_line.data(), nullptr, nullptr, false, NULL, nullptr, current_dir,
-			&startup_info, &process_info);
-
-		if (process_info.hThread && process_info.hThread != INVALID_HANDLE_VALUE) CloseHandle(process_info.hThread);
-		if (process_info.hProcess && process_info.hProcess != INVALID_HANDLE_VALUE) CloseHandle(process_info.hProcess);
-	}
-
 	void relaunch_self(std::string command_line)
 	{
 		const utils::nt::library self;

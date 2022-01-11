@@ -76,6 +76,8 @@ namespace utils::http
 		curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
 		curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &helper);
 		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true);
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "xlabs-updater/1.0");
 
 		if (curl_easy_perform(curl) == CURLE_OK)
 		{

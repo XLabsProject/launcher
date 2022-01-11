@@ -11,6 +11,9 @@
 #include <rapidjson/document.h>
 #include <rapidjson/ostreamwrapper.h>
 #include <rapidjson/writer.h>
+#include <iostream>
+
+#include <elzip.hpp>
 
 #define UPDATE_SERVER "https://master.xlabs.dev/"
 
@@ -22,7 +25,10 @@
 
 #define UPDATE_HOST_BINARY "xlabs.exe"
 
-#define IW4X_VERSION_FILE ".version.json";
+#define IW4X_VERSION_FILE ".version.json"
+#define IW4X_RAWFILES_UPDATE_FILE "release.zip"
+#define IW4X_RAWFILES_UPDATE_URL "https://github.com/XLabsProject/iw4x-rawfiles/releases/latest/download/" IW4X_RAWFILES_UPDATE_FILE
+#define IW4X_LIBRARY_UPDATE_URL "https://github.com/XLabsProject/iw4x-client/releases/latest/download/iw4x.dll"
 
 namespace updater
 {
@@ -141,20 +147,34 @@ namespace updater
 		this->update_files(outdated_files);
 	}
 
-	void file_updater::update_file(const file_info& file) const
+	void file_updater::update_file(const file_info& file, bool iw4x_file) const
 	{
-		const auto url = get_update_folder() + file.name;
+		auto url = get_update_folder() + file.name;
+		
+		if (iw4x_file)
+		{
+			url = file.name;
+		}
+
 		const auto data = utils::http::get_data(url, {}, [&](const size_t progress)
 		{
 			this->listener_.file_progress(file, progress);
 		});
 
-		if (!data || data->size() != file.size || get_hash(*data) != file.hash)
+		// IW4x files have invalid hash and size for now
+		if (!data || (!iw4x_file && (data->size() != file.size || get_hash(*data) != file.hash)))
 		{
 			throw std::runtime_error("Failed to download: " + url);
 		}
 
-		const auto out_file = this->get_drive_filename(file);
+		auto out_file = this->get_drive_filename(file);
+
+		// IW4x hack to fetch release from github
+		if (iw4x_file)
+		{
+			out_file = this->base_ + std::filesystem::path(file.name).filename().string();
+		}
+
 		if (!utils::io::write_file(out_file, *data, false))
 		{
 			throw std::runtime_error("Failed to write: " + file.name);
@@ -199,15 +219,10 @@ namespace updater
 		throw update_cancelled();
 	}
 
-	bool file_updater::does_iw4x_require_update(std::filesystem::path iw4x_basegame_directory, bool& out_requires_rawfile_update, bool& out_requires_iw4x_update) const
+	bool file_updater::does_iw4x_require_update(iw4x_update_state& update_state) const
 	{
+		std::filesystem::path iw4x_basegame_directory(this->base_);
 		std::filesystem::path revision_file_path = iw4x_basegame_directory / IW4X_VERSION_FILE;
-
-		out_requires_rawfile_update = true;
-		out_requires_iw4x_update = true;
-
-		rapidjson::Document doc{};
-		doc.SetObject();
 
 		std::string data{};
 		const auto& props = revision_file_path.string();
@@ -228,7 +243,8 @@ namespace updater
 			std::optional<std::string> iw4x_tag = get_release_tag("https://api.github.com/repos/XLabsProject/iw4x-client/releases/latest");
 			if (iw4x_tag.has_value())
 			{
-				out_requires_iw4x_update = doc["iw4x_version"].GetString() != iw4x_tag;
+				update_state.library_requires_update = doc["iw4x_version"].GetString() != iw4x_tag.value();
+				update_state.library_latest_tag = iw4x_tag.value();
 			}
 		}
 
@@ -237,11 +253,12 @@ namespace updater
 			std::optional<std::string> rawfiles_tag = get_release_tag("https://api.github.com/repos/XLabsProject/iw4x-rawfiles/releases/latest");
 			if (rawfiles_tag.has_value())
 			{
-				out_requires_rawfile_update = doc["rawfile_version"].GetString() != rawfiles_tag;
+				update_state.rawfile_requires_update = doc["rawfile_version"].GetString() != rawfiles_tag.value();
+				update_state.rawfile_latest_tag = rawfiles_tag.value();
 			}
 		}
 
-		return out_requires_iw4x_update || out_requires_rawfile_update;
+		return update_state.library_requires_update || update_state.rawfile_requires_update;
 	}
 
 	std::optional<std::string> file_updater::get_release_tag(std::string release_url) const
@@ -250,31 +267,35 @@ namespace updater
 		if (iw4x_release_info.has_value())
 		{
 			rapidjson::Document release_json{};
+			release_json.SetObject();
 			release_json.Parse(iw4x_release_info.value());
 
 			if (release_json.HasMember("tag_name"))
 			{
 				auto tag_name = release_json["tag_name"].GetString();
-
-				return release_json["tag_name"].GetString();
+				return tag_name;
 			}
 		}
 
 		return std::optional<std::string>();
 	}
 
-	void file_updater::create_iw4x_version_file(std::filesystem::path iw4x_basegame_directory, std::string rawfile_version, std::string iw4x_version) const
+	void file_updater::create_iw4x_version_file(std::string rawfile_version, std::string iw4x_version) const
 	{
+		std::filesystem::path iw4x_basegame_directory(this->base_);
+
 		rapidjson::Document doc{};
 
 		rapidjson::StringBuffer buffer{};
 		rapidjson::Writer<rapidjson::StringBuffer, rapidjson::Document::EncodingType, rapidjson::ASCII<>>
 			writer(buffer);
 
-		doc.Accept(writer);
-
+		doc.SetObject();
+		
 		doc.AddMember("rawfile_version", rawfile_version, doc.GetAllocator());
 		doc.AddMember("iw4x_version", iw4x_version, doc.GetAllocator());
+
+		doc.Accept(writer);
 
 		const std::string json(buffer.GetString(), buffer.GetLength());
 
@@ -283,33 +304,43 @@ namespace updater
 		utils::io::write_file(revision_file_path.string(), json);
 	}
 
-	void file_updater::update_iw4x_if_necessary(std::filesystem::path iw4x_basegame_directory) const
+	void file_updater::update_iw4x_if_necessary() const
 	{
-		bool requires_rawfile_update, requires_iw4x_update; 
+		iw4x_update_state update_state;
 
-		if (does_iw4x_require_update(iw4x_basegame_directory , requires_rawfile_update, requires_iw4x_update))
+		if (does_iw4x_require_update(update_state))
 		{
 			std::vector<file_info> files_to_update{};
 
-			if (requires_rawfile_update)
+			if (update_state.library_requires_update)
 			{
-				files_to_update.emplace_back("https://github.com/XLabsProject/iw4x-client/releases/latest/download/iw4x.dll");
+				files_to_update.emplace_back(IW4X_LIBRARY_UPDATE_URL);
 			}
 
-			if (requires_iw4x_update)
+			if (update_state.rawfile_requires_update)
 			{
-				files_to_update.emplace_back("https://github.com/XLabsProject/iw4x-rawfiles/releases/latest/download/release.zip");
+				files_to_update.emplace_back(IW4X_RAWFILES_UPDATE_URL);
 			}
 
-			update_files(files_to_update);
-			create_iw4x_version_file(iw4x_basegame_directory, "TEST", "TEST 2");
+			update_files(files_to_update, /*iw4x_file=*/true);
+			create_iw4x_version_file(update_state.rawfile_latest_tag, update_state.library_latest_tag);
 
-			// #TODO: 
-			// Once this is done, we need to move iw4x.dll over and to unpack release.zip and prepare rawfiles
+			deploy_iw4x_rawfiles();
 		}
 	}
 
-	void file_updater::update_files(const std::vector<file_info>& outdated_files) const
+	void file_updater::deploy_iw4x_rawfiles() const
+	{
+		const std::string rawfiles_zip = base_ + IW4X_RAWFILES_UPDATE_FILE;
+
+		if (utils::io::file_exists(rawfiles_zip))
+		{
+			elz::extractZip(rawfiles_zip, base_);
+			utils::io::remove_file(rawfiles_zip);
+		}
+	}
+
+	void file_updater::update_files(const std::vector<file_info>& outdated_files, bool iw4x_files) const
 	{
 		this->listener_.update_files(outdated_files);
 
@@ -340,7 +371,7 @@ namespace updater
 					{
 						const auto& file = outdated_files[index];
 						this->listener_.begin_file(file);
-						this->update_file(file);
+						this->update_file(file, iw4x_files);
 						this->listener_.end_file(file);
 					}
 					catch (...)
