@@ -13,7 +13,19 @@
 #include <rapidjson/writer.h>
 #include <iostream>
 
-#include <elzip.hpp>
+#pragma warning(push)
+#pragma warning(disable: 4100)
+#pragma warning(disable: 4189)
+#pragma warning(disable: 4334)
+#pragma warning(disable: 4244)
+#pragma warning(disable: 4245)
+#pragma warning(disable: 4456)
+#pragma warning(disable: 26451)
+#pragma warning(disable: 26495)
+#pragma warning(disable: 26812)
+#include <andyzip/zipfile_reader.hpp>
+#include <andyzip/brotli_decoder.hpp>
+#pragma warning(pop)
 
 #define UPDATE_SERVER "https://master.xlabs.dev/"
 
@@ -335,7 +347,23 @@ namespace updater
 
 		if (utils::io::file_exists(rawfiles_zip))
 		{
-			elz::extractZip(rawfiles_zip, base_);
+			std::string data;
+			
+			if (utils::io::read_file(rawfiles_zip, &data))
+			{
+				std::vector<uint8_t> buffer(data.begin(), data.end());
+
+				zipfile_reader reader(buffer.data(), buffer.data() + buffer.size());
+
+				auto filenames = reader.filenames();
+
+				for (const std::string filename : filenames)
+				{
+					std::vector<uint8_t> file = reader.read(filename);
+					utils::io::write_file(base_ + "/" + filename, std::string(file.begin(), file.end()));
+				}
+
+			}
 			utils::io::remove_file(rawfiles_zip);
 		}
 	}
