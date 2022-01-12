@@ -157,9 +157,9 @@ namespace updater
 		}
 
 		const auto data = utils::http::get_data(url, {}, [&](const size_t progress)
-			{
-				this->listener_.file_progress(file, progress);
-			});
+		{
+			this->listener_.file_progress(file, progress);
+		});
 
 		// IW4x files have invalid hash and size for now
 		if (!data || (!iw4x_file && (data->size() != file.size || get_hash(*data) != file.hash)))
@@ -207,7 +207,7 @@ namespace updater
 		try
 		{
 			this->move_current_process_file();
-			this->update_files({ *host_file });
+			this->update_files({*host_file});
 		}
 		catch (...)
 		{
@@ -297,7 +297,7 @@ namespace updater
 
 		doc.Accept(writer);
 
-		const std::string json(buffer.GetString(), buffer.GetLength());
+		const std::string json(buffer.GetString());
 
 		std::filesystem::path revision_file_path = iw4x_basegame_directory / IW4X_VERSION_FILE;
 
@@ -337,14 +337,14 @@ namespace updater
 		{
 			std::string data;
 
-			unzFile file = unzOpen(rawfiles_zip.c_str());
+			unzFile file = unzOpen(rawfiles_zip.data());
 
 			if (file)
 			{
 				constexpr uint16_t READ_SIZE = 65336;
 				constexpr uint8_t MAX_FILENAME = 255;
 
-				char read_buffer[READ_SIZE];
+				char read_buffer[READ_SIZE] = {0};
 
 				unz_global_info global_info;
 				if (unzGetGlobalInfo(file, &global_info) == UNZ_OK)
@@ -355,18 +355,17 @@ namespace updater
 					{
 						// Get info about current file.
 						unz_file_info file_info;
-						char filename[MAX_FILENAME];
+						char filename[MAX_FILENAME] = {0};
 
 						if (unzGetCurrentFileInfo(
 							file,
 							&file_info,
 							filename,
 							MAX_FILENAME,
-							NULL, 0, NULL, 0) == UNZ_OK)
+							nullptr, 0, nullptr, 0) == UNZ_OK)
 						{
-
 							// Check if this entry is a directory or file.
-							const size_t filename_length = strlen(filename);
+							const auto filename_length = strlen(filename);
 							if (filename[filename_length - 1] == '/' || filename[filename_length - 1] == '\\') // ZIP is not directory-separator-agnostic
 							{
 								// Entry is a directory, so create it.
@@ -454,44 +453,43 @@ namespace updater
 		const auto thread_count = get_optimal_concurrent_download_count(outdated_files.size());
 
 		std::vector<std::thread> threads{};
-		std::atomic<size_t> current_index{ 0 };
-
+		std::atomic<size_t> current_index{0};
 
 		utils::concurrency::container<std::exception_ptr> exception{};
 
 		for (size_t i = 0; i < thread_count; ++i)
 		{
 			threads.emplace_back([&]()
+			{
+				while (!exception.access<bool>([](const std::exception_ptr& ptr)
 				{
-					while (!exception.access<bool>([](const std::exception_ptr& ptr)
-						{
-							return static_cast<bool>(ptr);
-						}))
+					return static_cast<bool>(ptr);
+				}))
+				{
+					const auto index = current_index++;
+					if (index >= outdated_files.size())
 					{
-						const auto index = current_index++;
-						if (index >= outdated_files.size())
-						{
-							break;
-						}
-
-						try
-						{
-							const auto& file = outdated_files[index];
-							this->listener_.begin_file(file);
-							this->update_file(file, iw4x_files);
-							this->listener_.end_file(file);
-						}
-						catch (...)
-						{
-							exception.access([](std::exception_ptr& ptr)
-								{
-									ptr = std::current_exception();
-								});
-
-							return;
-						}
+						break;
 					}
-				});
+
+					try
+					{
+						const auto& file = outdated_files[index];
+						this->listener_.begin_file(file);
+						this->update_file(file, iw4x_files);
+						this->listener_.end_file(file);
+					}
+					catch (...)
+					{
+						exception.access([](std::exception_ptr& ptr)
+						{
+							ptr = std::current_exception();
+						});
+
+						return;
+					}
+				}
+			});
 		}
 
 		for (auto& thread : threads)
@@ -503,12 +501,12 @@ namespace updater
 		}
 
 		exception.access([](const std::exception_ptr& ptr)
+		{
+			if (ptr)
 			{
-				if (ptr)
-				{
-					std::rethrow_exception(ptr);
-				}
-			});
+				std::rethrow_exception(ptr);
+			}
+		});
 
 		this->listener_.done_update();
 	}
