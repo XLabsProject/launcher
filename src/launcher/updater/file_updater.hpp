@@ -20,7 +20,8 @@ namespace updater
 
 	private:
 
-		struct iw4x_update_state {
+		struct iw4x_update_state 
+		{
 			bool rawfile_requires_update = false;
 			bool library_requires_update = false;
 			std::string rawfile_latest_tag;

@@ -13,19 +13,7 @@
 #include <rapidjson/writer.h>
 #include <iostream>
 
-#pragma warning(push)
-#pragma warning(disable: 4100)
-#pragma warning(disable: 4189)
-#pragma warning(disable: 4334)
-#pragma warning(disable: 4244)
-#pragma warning(disable: 4245)
-#pragma warning(disable: 4456)
-#pragma warning(disable: 26451)
-#pragma warning(disable: 26495)
-#pragma warning(disable: 26812)
-#include <andyzip/zipfile_reader.hpp>
-#include <andyzip/brotli_decoder.hpp>
-#pragma warning(pop)
+#include <unzip.h>
 
 #define UPDATE_SERVER "https://master.xlabs.dev/"
 
@@ -134,8 +122,8 @@ namespace updater
 
 	file_updater::file_updater(progress_listener& listener, std::string base, std::string process_file)
 		: listener_(listener)
-		  , base_(std::move(base))
-		  , process_file_(std::move(process_file))
+		, base_(std::move(base))
+		, process_file_(std::move(process_file))
 	{
 		this->dead_process_file_ = this->process_file_ + ".old";
 		this->delete_old_process_file();
@@ -162,16 +150,16 @@ namespace updater
 	void file_updater::update_file(const file_info& file, bool iw4x_file) const
 	{
 		auto url = get_update_folder() + file.name;
-		
+
 		if (iw4x_file)
 		{
 			url = file.name;
 		}
 
 		const auto data = utils::http::get_data(url, {}, [&](const size_t progress)
-		{
-			this->listener_.file_progress(file, progress);
-		});
+			{
+				this->listener_.file_progress(file, progress);
+			});
 
 		// IW4x files have invalid hash and size for now
 		if (!data || (!iw4x_file && (data->size() != file.size || get_hash(*data) != file.hash)))
@@ -219,7 +207,7 @@ namespace updater
 		try
 		{
 			this->move_current_process_file();
-			this->update_files({*host_file});
+			this->update_files({ *host_file });
 		}
 		catch (...)
 		{
@@ -303,7 +291,7 @@ namespace updater
 			writer(buffer);
 
 		doc.SetObject();
-		
+
 		doc.AddMember("rawfile_version", rawfile_version, doc.GetAllocator());
 		doc.AddMember("iw4x_version", iw4x_version, doc.GetAllocator());
 
@@ -348,22 +336,113 @@ namespace updater
 		if (utils::io::file_exists(rawfiles_zip))
 		{
 			std::string data;
-			
-			if (utils::io::read_file(rawfiles_zip, &data))
+
+			unzFile file = unzOpen(rawfiles_zip.c_str());
+
+			if (file)
 			{
-				std::vector<uint8_t> buffer(data.begin(), data.end());
+				constexpr uint16_t READ_SIZE = 65336;
+				constexpr uint8_t MAX_FILENAME = 255;
 
-				zipfile_reader reader(buffer.data(), buffer.data() + buffer.size());
+				char read_buffer[READ_SIZE];
 
-				auto filenames = reader.filenames();
-
-				for (const std::string filename : filenames)
+				unz_global_info global_info;
+				if (unzGetGlobalInfo(file, &global_info) == UNZ_OK)
 				{
-					std::vector<uint8_t> file = reader.read(filename);
-					utils::io::write_file(base_ + "/" + filename, std::string(file.begin(), file.end()));
-				}
+					// Loop to extract all files
+					uLong i;
+					for (i = 0; i < global_info.number_entry; ++i)
+					{
+						// Get info about current file.
+						unz_file_info file_info;
+						char filename[MAX_FILENAME];
 
+						if (unzGetCurrentFileInfo(
+							file,
+							&file_info,
+							filename,
+							MAX_FILENAME,
+							NULL, 0, NULL, 0) == UNZ_OK)
+						{
+
+							// Check if this entry is a directory or file.
+							const size_t filename_length = strlen(filename);
+							if (filename[filename_length - 1] == '/' || filename[filename_length - 1] == '\\') // ZIP is not directory-separator-agnostic
+							{
+								// Entry is a directory, so create it.
+								utils::io::create_directory(base_ + "/" + filename);
+							}
+							else
+							{
+								// Entry is a file, so extract it.
+								if (unzOpenCurrentFile(file) == UNZ_OK)
+								{
+									// Open a file to write out the data.
+									std::ofstream out(base_ + "/" + filename, std::ios::binary | std::ios::trunc);
+									if (out.is_open())
+									{
+										int readBytes = UNZ_OK;
+										while (readBytes > 0)
+										{
+											readBytes = unzReadCurrentFile(file, read_buffer, READ_SIZE);
+											if (readBytes < 0)
+											{
+												// There was an error reading data
+												throw std::runtime_error("Error while reading" + std::string(filename) + " from the zip!");
+												break;
+											}
+
+											// Write data to file.
+											if (readBytes > 0)
+											{
+												out.write(read_buffer, readBytes);
+											}
+											else 
+											{
+												// No more data to read, the loop will break
+												// This is normal behaviour
+											}
+										} 
+
+										out.close();
+									}
+									else
+									{
+										// Could not open file for writing!
+										throw std::runtime_error("Failed to open file "+ std::string(filename) + " for writing!");
+									}
+
+									unzCloseCurrentFile(file);
+								}
+								else 
+								{
+									// Could not read file from the ZIP
+									throw std::runtime_error("Failed to read file " + std::string(filename) + " from the releases ZIP!");
+								}
+							}
+
+							// Go the the next entry listed in the zip file.
+							if ((i + 1) < global_info.number_entry)
+							{
+								if (unzGoToNextFile(file) != UNZ_OK)
+								{
+									printf("cound not read next file\n");
+									unzClose(file);
+								}
+							}
+						}
+					}
+				}
+				else 
+				{
+					unzClose(file);
+				}
 			}
+			else
+			{
+				// The zip was absent when it was expected, should we throw for this?
+			}
+
 			utils::io::remove_file(rawfiles_zip);
 		}
 	}
@@ -375,7 +454,7 @@ namespace updater
 		const auto thread_count = get_optimal_concurrent_download_count(outdated_files.size());
 
 		std::vector<std::thread> threads{};
-		std::atomic<size_t> current_index{0};
+		std::atomic<size_t> current_index{ 0 };
 
 
 		utils::concurrency::container<std::exception_ptr> exception{};
@@ -383,36 +462,36 @@ namespace updater
 		for (size_t i = 0; i < thread_count; ++i)
 		{
 			threads.emplace_back([&]()
-			{
-				while (!exception.access<bool>([](const std::exception_ptr& ptr)
 				{
-					return static_cast<bool>(ptr);
-				}))
-				{
-					const auto index = current_index++;
-					if (index >= outdated_files.size())
-					{
-						break;
-					}
-
-					try
-					{
-						const auto& file = outdated_files[index];
-						this->listener_.begin_file(file);
-						this->update_file(file, iw4x_files);
-						this->listener_.end_file(file);
-					}
-					catch (...)
-					{
-						exception.access([](std::exception_ptr& ptr)
+					while (!exception.access<bool>([](const std::exception_ptr& ptr)
 						{
-							ptr = std::current_exception();
-						});
+							return static_cast<bool>(ptr);
+						}))
+					{
+						const auto index = current_index++;
+						if (index >= outdated_files.size())
+						{
+							break;
+						}
 
-						return;
+						try
+						{
+							const auto& file = outdated_files[index];
+							this->listener_.begin_file(file);
+							this->update_file(file, iw4x_files);
+							this->listener_.end_file(file);
+						}
+						catch (...)
+						{
+							exception.access([](std::exception_ptr& ptr)
+								{
+									ptr = std::current_exception();
+								});
+
+							return;
+						}
 					}
-				}
-			});
+				});
 		}
 
 		for (auto& thread : threads)
@@ -424,12 +503,12 @@ namespace updater
 		}
 
 		exception.access([](const std::exception_ptr& ptr)
-		{
-			if (ptr)
 			{
-				std::rethrow_exception(ptr);
-			}
-		});
+				if (ptr)
+				{
+					std::rethrow_exception(ptr);
+				}
+			});
 
 		this->listener_.done_update();
 	}

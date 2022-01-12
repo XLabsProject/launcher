@@ -110,7 +110,6 @@ namespace utils::nt
 	std::string load_resource(int id);
 
 	void launch_process(const std::string& process, std::string command_line);
-	void launch_process_with_dll_search_path(const std::string& process, std::string command_line, std::string dll_search_path);
 	void relaunch_self(std::string command_line = GetCommandLineA());
 
 	unsigned long get_parent_pid();

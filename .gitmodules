@@ -7,6 +7,7 @@
 [submodule "deps/curl"]
 	path = deps/curl
 	url = https://github.com/curl/curl.git
-[submodule "deps/andyzip"]
-	path = deps/andyzip
-	url = https://github.com/andy-thomason/andyzip.git
+[submodule "deps/zlib"]
+	path = deps/zlib
+	url = https://github.com/madler/zlib.git
+	branch = develop
