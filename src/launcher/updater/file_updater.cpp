@@ -8,6 +8,13 @@
 #include <utils/http.hpp>
 #include <utils/io.hpp>
 
+#include <rapidjson/document.h>
+#include <rapidjson/ostreamwrapper.h>
+#include <rapidjson/writer.h>
+#include <iostream>
+
+#include <unzip.h>
+
 #define UPDATE_SERVER "https://master.xlabs.dev/"
 
 #define UPDATE_FILE_MAIN UPDATE_SERVER "files.json"
@@ -17,6 +24,11 @@
 #define UPDATE_FOLDER_DEV UPDATE_SERVER "data-dev/"
 
 #define UPDATE_HOST_BINARY "xlabs.exe"
+
+#define IW4X_VERSION_FILE ".version.json"
+#define IW4X_RAWFILES_UPDATE_FILE "release.zip"
+#define IW4X_RAWFILES_UPDATE_URL "https://github.com/XLabsProject/iw4x-rawfiles/releases/latest/download/" IW4X_RAWFILES_UPDATE_FILE
+#define IW4X_LIBRARY_UPDATE_URL "https://github.com/XLabsProject/iw4x-client/releases/latest/download/iw4x.dll"
 
 namespace updater
 {
@@ -110,8 +122,8 @@ namespace updater
 
 	file_updater::file_updater(progress_listener& listener, std::string base, std::string process_file)
 		: listener_(listener)
-		  , base_(std::move(base))
-		  , process_file_(std::move(process_file))
+		, base_(std::move(base))
+		, process_file_(std::move(process_file))
 	{
 		this->dead_process_file_ = this->process_file_ + ".old";
 		this->delete_old_process_file();
@@ -135,20 +147,34 @@ namespace updater
 		this->update_files(outdated_files);
 	}
 
-	void file_updater::update_file(const file_info& file) const
+	void file_updater::update_file(const file_info& file, bool iw4x_file) const
 	{
-		const auto url = get_update_folder() + file.name;
+		auto url = get_update_folder() + file.name;
+
+		if (iw4x_file)
+		{
+			url = file.name;
+		}
+
 		const auto data = utils::http::get_data(url, {}, [&](const size_t progress)
 		{
 			this->listener_.file_progress(file, progress);
 		});
 
-		if (!data || data->size() != file.size || get_hash(*data) != file.hash)
+		// IW4x files have invalid hash and size for now
+		if (!data || (!iw4x_file && (data->size() != file.size || get_hash(*data) != file.hash)))
 		{
 			throw std::runtime_error("Failed to download: " + url);
 		}
 
-		const auto out_file = this->get_drive_filename(file);
+		auto out_file = this->get_drive_filename(file);
+
+		// IW4x hack to fetch release from github
+		if (iw4x_file)
+		{
+			out_file = this->base_ + std::filesystem::path(file.name).filename().string();
+		}
+
 		if (!utils::io::write_file(out_file, *data, false))
 		{
 			throw std::runtime_error("Failed to write: " + file.name);
@@ -193,7 +219,233 @@ namespace updater
 		throw update_cancelled();
 	}
 
-	void file_updater::update_files(const std::vector<file_info>& outdated_files) const
+	bool file_updater::does_iw4x_require_update(iw4x_update_state& update_state) const
+	{
+		std::filesystem::path iw4x_basegame_directory(this->base_);
+		std::filesystem::path revision_file_path = iw4x_basegame_directory / IW4X_VERSION_FILE;
+
+		std::string data{};
+		const auto& props = revision_file_path.string();
+		if (!utils::io::read_file(props, &data))
+		{
+			return true;
+		}
+
+		rapidjson::Document doc{};
+		const rapidjson::ParseResult result = doc.Parse(data);
+		if (!result || !doc.IsObject())
+		{
+			return true;
+		}
+
+		if (doc.HasMember("iw4x_version"))
+		{
+			std::optional<std::string> iw4x_tag = get_release_tag("https://api.github.com/repos/XLabsProject/iw4x-client/releases/latest");
+			if (iw4x_tag.has_value())
+			{
+				update_state.library_requires_update = doc["iw4x_version"].GetString() != iw4x_tag.value();
+				update_state.library_latest_tag = iw4x_tag.value();
+			}
+		}
+
+		if (doc.HasMember("rawfile_version"))
+		{
+			std::optional<std::string> rawfiles_tag = get_release_tag("https://api.github.com/repos/XLabsProject/iw4x-rawfiles/releases/latest");
+			if (rawfiles_tag.has_value())
+			{
+				update_state.rawfile_requires_update = doc["rawfile_version"].GetString() != rawfiles_tag.value();
+				update_state.rawfile_latest_tag = rawfiles_tag.value();
+			}
+		}
+
+		return update_state.library_requires_update || update_state.rawfile_requires_update;
+	}
+
+	std::optional<std::string> file_updater::get_release_tag(std::string release_url) const
+	{
+		std::optional<std::string> iw4x_release_info = utils::http::get_data(release_url);
+		if (iw4x_release_info.has_value())
+		{
+			rapidjson::Document release_json{};
+			release_json.SetObject();
+			release_json.Parse(iw4x_release_info.value());
+
+			if (release_json.HasMember("tag_name"))
+			{
+				auto tag_name = release_json["tag_name"].GetString();
+				return tag_name;
+			}
+		}
+
+		return std::optional<std::string>();
+	}
+
+	void file_updater::create_iw4x_version_file(std::string rawfile_version, std::string iw4x_version) const
+	{
+		std::filesystem::path iw4x_basegame_directory(this->base_);
+
+		rapidjson::Document doc{};
+
+		rapidjson::StringBuffer buffer{};
+		rapidjson::Writer<rapidjson::StringBuffer, rapidjson::Document::EncodingType, rapidjson::ASCII<>>
+			writer(buffer);
+
+		doc.SetObject();
+
+		doc.AddMember("rawfile_version", rawfile_version, doc.GetAllocator());
+		doc.AddMember("iw4x_version", iw4x_version, doc.GetAllocator());
+
+		doc.Accept(writer);
+
+		const std::string json(buffer.GetString());
+
+		std::filesystem::path revision_file_path = iw4x_basegame_directory / IW4X_VERSION_FILE;
+
+		utils::io::write_file(revision_file_path.string(), json);
+	}
+
+	void file_updater::update_iw4x_if_necessary() const
+	{
+		iw4x_update_state update_state;
+
+		if (does_iw4x_require_update(update_state))
+		{
+			std::vector<file_info> files_to_update{};
+
+			if (update_state.library_requires_update)
+			{
+				files_to_update.emplace_back(IW4X_LIBRARY_UPDATE_URL);
+			}
+
+			if (update_state.rawfile_requires_update)
+			{
+				files_to_update.emplace_back(IW4X_RAWFILES_UPDATE_URL);
+			}
+
+			update_files(files_to_update, /*iw4x_file=*/true);
+			create_iw4x_version_file(update_state.rawfile_latest_tag, update_state.library_latest_tag);
+
+			deploy_iw4x_rawfiles();
+		}
+	}
+
+	void file_updater::deploy_iw4x_rawfiles() const
+	{
+		const std::string rawfiles_zip = base_ + IW4X_RAWFILES_UPDATE_FILE;
+
+		if (utils::io::file_exists(rawfiles_zip))
+		{
+			std::string data;
+
+			unzFile file = unzOpen(rawfiles_zip.data());
+
+			if (file)
+			{
+				constexpr uint16_t READ_SIZE = 65336;
+				constexpr uint8_t MAX_FILENAME = 255;
+
+				char read_buffer[READ_SIZE] = {0};
+
+				unz_global_info global_info;
+				if (unzGetGlobalInfo(file, &global_info) == UNZ_OK)
+				{
+					// Loop to extract all files
+					uLong i;
+					for (i = 0; i < global_info.number_entry; ++i)
+					{
+						// Get info about current file.
+						unz_file_info file_info;
+						char filename[MAX_FILENAME] = {0};
+
+						if (unzGetCurrentFileInfo(
+							file,
+							&file_info,
+							filename,
+							MAX_FILENAME,
+							nullptr, 0, nullptr, 0) == UNZ_OK)
+						{
+							// Check if this entry is a directory or file.
+							const auto filename_length = strlen(filename);
+							if (filename[filename_length - 1] == '/' || filename[filename_length - 1] == '\\') // ZIP is not directory-separator-agnostic
+							{
+								// Entry is a directory, so create it.
+								utils::io::create_directory(base_ + "/" + filename);
+							}
+							else
+							{
+								// Entry is a file, so extract it.
+								if (unzOpenCurrentFile(file) == UNZ_OK)
+								{
+									// Open a file to write out the data.
+									std::ofstream out(base_ + "/" + filename, std::ios::binary | std::ios::trunc);
+									if (out.is_open())
+									{
+										int readBytes = UNZ_OK;
+										while (readBytes > 0)
+										{
+											readBytes = unzReadCurrentFile(file, read_buffer, READ_SIZE);
+											if (readBytes < 0)
+											{
+												// There was an error reading data
+												throw std::runtime_error("Error while reading" + std::string(filename) + " from the zip!");
+												break;
+											}
+
+											// Write data to file.
+											if (readBytes > 0)
+											{
+												out.write(read_buffer, readBytes);
+											}
+											else 
+											{
+												// No more data to read, the loop will break
+												// This is normal behaviour
+											}
+										} 
+
+										out.close();
+									}
+									else
+									{
+										// Could not open file for writing!
+										throw std::runtime_error("Failed to open file "+ std::string(filename) + " for writing!");
+									}
+
+									unzCloseCurrentFile(file);
+								}
+								else 
+								{
+									// Could not read file from the ZIP
+									throw std::runtime_error("Failed to read file " + std::string(filename) + " from the releases ZIP!");
+								}
+							}
+
+							// Go the the next entry listed in the zip file.
+							if ((i + 1) < global_info.number_entry)
+							{
+								if (unzGoToNextFile(file) != UNZ_OK)
+								{
+									unzClose(file);
+								}
+							}
+						}
+					}
+				}
+				else 
+				{
+					unzClose(file);
+				}
+			}
+			else
+			{
+				// The zip was absent when it was expected, should we throw for this?
+			}
+
+			utils::io::remove_file(rawfiles_zip);
+		}
+	}
+
+	void file_updater::update_files(const std::vector<file_info>& outdated_files, bool iw4x_files) const
 	{
 		this->listener_.update_files(outdated_files);
 
@@ -201,7 +453,6 @@ namespace updater
 
 		std::vector<std::thread> threads{};
 		std::atomic<size_t> current_index{0};
-
 
 		utils::concurrency::container<std::exception_ptr> exception{};
 
@@ -224,7 +475,7 @@ namespace updater
 					{
 						const auto& file = outdated_files[index];
 						this->listener_.begin_file(file);
-						this->update_file(file);
+						this->update_file(file, iw4x_files);
 						this->listener_.end_file(file);
 					}
 					catch (...)

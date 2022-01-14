@@ -1,17 +1,50 @@
 <div class="grid">
-    <span id="data" class="container card">
-        <span class="title">IW4x</span>
-        <span class="content">Soon...</span>
+    <span class="a container card" id="mw2-mp">
+        <span class="title">Multiplayer</span>
+    <span class="content img" style="background-image: url(./img/iw4x-mp.png)"></span>
     </span>
 </div>
 
 <style>
     #content>.grid {
-        display: flex;
-        width: 100%;
-    }
-
-    #data {
         flex: 1 1 auto;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-auto-rows: minmax(100px, auto);
     }
 </style>
+
+<script>
+    (function() {
+        function launchMW2Variant(id) {
+            executeCommand('launch-mw2', id);
+        }
+
+        function showConfigureWarning() {
+            window.showMessageBox("⚙ IW4x not configured",
+                "You have not configured your <b>MW2 installation</b> path.<br><br>Please do so in the settings!", ["Ok"]).then(index => {
+                window.showSettings();
+            });
+        }
+
+        function handleMW2() {
+            const el = this;
+            const id = el.id;
+
+            executeCommand('get-property', 'mw2-install').then(folder => {
+                if (!folder) {
+                    showConfigureWarning();
+                } else {
+                    launchMW2Variant(id);
+                }
+            });
+        }
+
+        const mw2Nnodes = document.querySelectorAll("#content>.grid>.a");
+        for (var i = 0; i < mw2Nnodes.length; ++i) {
+            const node = mw2Nnodes[i];
+            node.onclick = handleMW2;
+        }
+    })();
+</script>
