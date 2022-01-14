@@ -224,41 +224,45 @@ namespace updater
 		std::filesystem::path iw4x_basegame_directory(this->base_);
 		std::filesystem::path revision_file_path = iw4x_basegame_directory / IW4X_VERSION_FILE;
 
+		bool every_update_required = false;
 		std::string data{};
 		const auto& props = revision_file_path.string();
-		if (!utils::io::read_file(props, &data))
-		{
-			return true;
-		}
-
 		rapidjson::Document doc{};
-		const rapidjson::ParseResult result = doc.Parse(data);
-		if (!result || !doc.IsObject())
+
+		if (utils::io::read_file(props, &data))
 		{
-			return true;
+			const rapidjson::ParseResult result = doc.Parse(data);
+			if (!result || !doc.IsObject())
+			{
+				every_update_required = true;
+			}
+		}
+		else
+		{
+			every_update_required = true;
 		}
 
-		if (doc.HasMember("iw4x_version"))
+		if (every_update_required || doc.HasMember("iw4x_version"))
 		{
 			std::optional<std::string> iw4x_tag = get_release_tag("https://api.github.com/repos/XLabsProject/iw4x-client/releases/latest");
 			if (iw4x_tag.has_value())
 			{
-				update_state.library_requires_update = doc["iw4x_version"].GetString() != iw4x_tag.value();
+				update_state.library_requires_update = every_update_required || doc["iw4x_version"].GetString() != iw4x_tag.value();
 				update_state.library_latest_tag = iw4x_tag.value();
 			}
 		}
 
-		if (doc.HasMember("rawfile_version"))
+		if (every_update_required || doc.HasMember("rawfile_version"))
 		{
 			std::optional<std::string> rawfiles_tag = get_release_tag("https://api.github.com/repos/XLabsProject/iw4x-rawfiles/releases/latest");
 			if (rawfiles_tag.has_value())
 			{
-				update_state.rawfile_requires_update = doc["rawfile_version"].GetString() != rawfiles_tag.value();
+				update_state.rawfile_requires_update = every_update_required || doc["rawfile_version"].GetString() != rawfiles_tag.value();
 				update_state.rawfile_latest_tag = rawfiles_tag.value();
 			}
 		}
 
-		return update_state.library_requires_update || update_state.rawfile_requires_update;
+		return every_update_required || update_state.library_requires_update || update_state.rawfile_requires_update;
 	}
 
 	std::optional<std::string> file_updater::get_release_tag(std::string release_url) const
@@ -323,9 +327,14 @@ namespace updater
 			}
 
 			update_files(files_to_update, /*iw4x_file=*/true);
-			create_iw4x_version_file(update_state.rawfile_latest_tag, update_state.library_latest_tag);
 
-			deploy_iw4x_rawfiles();
+			if (update_state.rawfile_requires_update)
+			{
+				deploy_iw4x_rawfiles();
+			}
+
+			// Do this last to make sure we don't ever create a versionfile when something failed
+			create_iw4x_version_file(update_state.rawfile_latest_tag, update_state.library_latest_tag);
 		}
 	}
 
@@ -341,7 +350,7 @@ namespace updater
 
 			if (file)
 			{
-				constexpr uint16_t READ_SIZE = 65336;
+				constexpr uint16_t READ_SIZE = 1024;
 				constexpr uint8_t MAX_FILENAME = 255;
 
 				char read_buffer[READ_SIZE] = {0};
@@ -377,12 +386,14 @@ namespace updater
 								if (unzOpenCurrentFile(file) == UNZ_OK)
 								{
 									// Open a file to write out the data.
-									std::ofstream out(base_ + "/" + filename, std::ios::binary | std::ios::trunc);
+									std::ofstream out(base_ + filename, std::ios::out | std::ios::binary | std::ios::trunc);
 									if (out.is_open())
 									{
+										bool firstLoop = true;
 										int readBytes = UNZ_OK;
-										while (readBytes > 0)
+										while (firstLoop || readBytes > 0)
 										{
+											firstLoop = false;
 											readBytes = unzReadCurrentFile(file, read_buffer, READ_SIZE);
 											if (readBytes < 0)
 											{
@@ -408,7 +419,8 @@ namespace updater
 									else
 									{
 										// Could not open file for writing!
-										throw std::runtime_error("Failed to open file "+ std::string(filename) + " for writing!");
+										auto error = GetLastError();
+										throw std::runtime_error("Failed to open file "+ std::string(filename) + " from "+base_+" for writing! Error code " + std::to_string(error));
 									}
 
 									unzCloseCurrentFile(file);
@@ -423,25 +435,37 @@ namespace updater
 							// Go the the next entry listed in the zip file.
 							if ((i + 1) < global_info.number_entry)
 							{
-								if (unzGoToNextFile(file) != UNZ_OK)
+								int entry_state = unzGoToNextFile(file);
+								if (entry_state != UNZ_OK)
 								{
+									throw std::runtime_error("Failed to fetch next entry "+std::to_string(i)+" in file (entry state is "+std::to_string(entry_state)+".");
 									unzClose(file);
 								}
 							}
 						}
 					}
 				}
-				else 
-				{
-					unzClose(file);
-				}
+
+				unzClose(file);
 			}
 			else
 			{
-				// The zip was absent when it was expected, should we throw for this?
+				// The zip could not be opened! 
+				throw std::runtime_error("Could not open file "+rawfiles_zip+", is it a valid zip file?");
 			}
 
-			utils::io::remove_file(rawfiles_zip);
+			bool has_removed_file = utils::io::remove_file(rawfiles_zip);
+			auto error = GetLastError();
+
+			if (!has_removed_file)
+			{
+				throw std::runtime_error("Failed to remove "+rawfiles_zip+", this is not supposed to happen! Error code " + std::to_string(error));
+			}
+		}
+		else
+		{
+			// The zip was absent when it was expected, should we throw for this?
+			throw std::runtime_error("I'm supposed to deploy rawfiles from " + rawfiles_zip + ", but where is it?\nCould not find the downloaded update file.");
 		}
 	}
 
