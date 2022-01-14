@@ -425,7 +425,6 @@ namespace updater
 							{
 								if (unzGoToNextFile(file) != UNZ_OK)
 								{
-									printf("cound not read next file\n");
 									unzClose(file);
 								}
 							}
