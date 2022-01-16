@@ -52,7 +52,7 @@ void Launcher::PrepareEnvironment(HINSTANCE instance)
 	base_path = appDataPath;
 	ui_path = (appDataPath / "data/launcher-ui");
 	download_path = appDataPath;
-	properties = utils::Properties((appDataPath / "user/properties.json").string());
+	properties = utils::properties((appDataPath / "user/properties.json").string());
 
 	SetWorkingDirectory();
 #else
@@ -60,7 +60,7 @@ void Launcher::PrepareEnvironment(HINSTANCE instance)
 	base_path = basePath;
 	ui_path = absolute(basePath / std::filesystem::path("../../src/launcher-ui/"));
 	download_path = basePath / "download";
-	properties = utils::Properties((basePath / "user/properties.json").string());
+	properties = utils::properties((basePath / "user/properties.json").string());
 #endif
 }
 
@@ -139,7 +139,7 @@ void Launcher::AddCommands(cef::cef_ui& cef_ui)
             return;
         }
 
-        const auto aw_install = properties.Load("aw-install");
+        const auto aw_install = properties.load("aw-install");
         if (!aw_install)
         {
             return;
@@ -178,7 +178,7 @@ void Launcher::AddCommands(cef::cef_ui& cef_ui)
             return;
         }
 
-        const auto ghosts_install = properties.Load("ghosts-install");
+        const auto ghosts_install = properties.load("ghosts-install");
         if (!ghosts_install)
         {
             return;
@@ -216,7 +216,7 @@ void Launcher::AddCommands(cef::cef_ui& cef_ui)
             return;
         }
 
-        const auto mw2_install = properties.Load("mw2-install");
+        const auto mw2_install = properties.load("mw2-install");
         if (!mw2_install)
         {
             return;
@@ -280,7 +280,7 @@ void Launcher::AddCommands(cef::cef_ui& cef_ui)
         }
 
         const std::string key{value.GetString(), value.GetStringLength()};
-        const auto property = properties.Load(key);
+        const auto property = properties.load(key);
         if (!property)
         {
             return;
@@ -296,7 +296,7 @@ void Launcher::AddCommands(cef::cef_ui& cef_ui)
             return;
         }
 
-        const auto _ = properties.Lock();
+        const auto _ = properties.lock();
 
         for (auto i = value.MemberBegin(); i != value.MemberEnd(); ++i)
         {
@@ -308,7 +308,7 @@ void Launcher::AddCommands(cef::cef_ui& cef_ui)
             const std::string key{i->name.GetString(), i->name.GetStringLength()};
             const std::string val{i->value.GetString(), i->value.GetStringLength()};
 
-            properties.Store(key, val);
+            properties.store(key, val);
         }
     });
 

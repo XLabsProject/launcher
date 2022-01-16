@@ -7,16 +7,16 @@
 
 namespace utils
 {
-	class Properties
+	class properties
 	{
 	public:
-		Properties();
-		explicit Properties(std::string filePath);
+		properties();
+		explicit properties(std::string filePath);
 
-		static std::unique_lock<named_mutex> Lock();
+		static std::unique_lock<named_mutex> lock();
 
-		std::optional<std::string> Load(const std::string& name) const;
-		void Store(const std::string& name, const std::string& value) const;
+		std::optional<std::string> load(const std::string& name) const;
+		void store(const std::string& name, const std::string& value) const;
 
 	private:
 		std::string file_path;

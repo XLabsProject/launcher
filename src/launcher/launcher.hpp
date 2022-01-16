@@ -9,7 +9,7 @@ class Launcher
 public:
     static int Run(HINSTANCE instance);
 
-    inline static utils::Properties properties;
+    inline static utils::properties properties;
 
 private:
     static std::string GetAppdataPath();

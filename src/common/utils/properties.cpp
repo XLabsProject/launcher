@@ -29,7 +29,7 @@ namespace utils
 			const rapidjson::ParseResult result = doc.Parse(data);
 			if (!result || !doc.IsObject())
 			{
-				return default_doc;
+				return default_doc; 
 			}
 
 			return doc;
@@ -48,26 +48,26 @@ namespace utils
 		}
 	}
 
-    Properties::Properties()
+    properties::properties()
         : file_path("properties.json")
     {
     }
 
-    Properties::Properties(std::string filePath)
+	properties::properties(std::string filePath)
         : file_path(std::move(filePath))
     {
     }
 
-	std::unique_lock<named_mutex> Properties::Lock()
+	std::unique_lock<named_mutex> properties::lock()
 	{
 		static named_mutex mutex{"xlabs-properties-lock"};
 		std::unique_lock<named_mutex> lock{mutex};
 		return lock;
 	}
 
-	std::optional<std::string> Properties::Load(const std::string& name) const
+	std::optional<std::string> properties::load(const std::string& name) const
     {
-		const auto _ = Lock();
+		const auto _ = lock();
 		const auto doc = load_properties(file_path);
 
 		if (!doc.HasMember(name))
@@ -84,9 +84,9 @@ namespace utils
 		return {std::string{value.GetString(), value.GetStringLength()}};
 	}
 
-	void Properties::Store(const std::string& name, const std::string& value) const
+	void properties::store(const std::string& name, const std::string& value) const
     {
-		const auto _ = Lock();
+		const auto _ = lock();
 		auto doc = load_properties(file_path);
 
 		while (doc.HasMember(name))
