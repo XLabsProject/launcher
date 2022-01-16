@@ -358,15 +358,13 @@ int Launcher::Run(HINSTANCE instance)
         }
 
         EnableDpiAwareness();
-
-#if defined(CI_BUILD) && !defined(DEBUG)
+        
 		RunAsSingleton();
 
         if (!strstr(GetCommandLineA(), "-noupdate"))
         {
 		    updater::run(download_path.string() + "/");
         }
-#endif
 
         if (!IsDedi())
         {
