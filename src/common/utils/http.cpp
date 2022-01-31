@@ -78,10 +78,19 @@ namespace utils::http
 		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true);
 		curl_easy_setopt(curl, CURLOPT_USERAGENT, "xlabs-updater/1.0");
+		curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
 
+		// Due to CURLOPT_FAILONERROR, CURLE_OK will not be met when the server returns 400 or 500
 		if (curl_easy_perform(curl) == CURLE_OK)
 		{
-			return {std::move(buffer)};
+			long http_code = 0;
+			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+			// But the server could still report 301 or 302 which would not be good for us. 
+			if (http_code >= 200 && http_code < 300) 
+			{
+				return { std::move(buffer) };
+			}
 		}
 
 		if(helper.exception)
