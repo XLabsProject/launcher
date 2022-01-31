@@ -91,6 +91,8 @@ namespace utils::http
 			{
 				return { std::move(buffer) };
 			}
+
+			throw std::exception(("Bad status code "+std::to_string(http_code)+" met while trying to download file "+url+"!").c_str());
 		}
 
 		if(helper.exception)
