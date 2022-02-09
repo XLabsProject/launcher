@@ -83,19 +83,18 @@ namespace utils::http
 		// Due to CURLOPT_FAILONERROR, CURLE_OK will not be met when the server returns 400 or 500
 		if (curl_easy_perform(curl) == CURLE_OK)
 		{
-			long http_code = 0;
+			auto http_code = 0l;
 			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 
-			// But the server could still report 301 or 302 which would not be good for us. 
 			if (http_code >= 200 && http_code < 300) 
 			{
 				return { std::move(buffer) };
 			}
 
-			throw std::exception(("Bad status code "+std::to_string(http_code)+" met while trying to download file "+url+"!").c_str());
+			throw std::runtime_error("Bad status code " + std::to_string(http_code) + " met while trying to download file " + url);
 		}
 
-		if(helper.exception)
+		if (helper.exception)
 		{
 			std::rethrow_exception(helper.exception);
 		}
