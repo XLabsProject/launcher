@@ -44,21 +44,46 @@ namespace
 
 	void enable_dpi_awareness()
 	{
-		if (SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) 
-		{ 
-			// Late Windows 10 -style DPI awareness
-		}
-		else if (SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE) == S_OK)
+		const utils::nt::library ntdll{ "ntdll.dll" };
+		const auto rtl_get_version = ntdll
+			? ntdll.get_proc<NTSTATUS(WINAPI*)(LPOSVERSIONINFOEXW)>(
+				"RtlGetVersion")
+			: nullptr;
+
+		if (rtl_get_version != NULL)
 		{
-			// Windows 8.1 style
-		}
-		else if (SetProcessDPIAware()) 
-		{
-			// Windows 7 style
+			OSVERSIONINFOEXW os_info;
+			os_info.dwOSVersionInfoSize = sizeof(os_info);
+			rtl_get_version(&os_info);
+
+			// See https://docs.microsoft.com/en-us/windows/win32/sysinfo/operating-system-version
+			if (os_info.dwMajorVersion == 10 && os_info.dwMinorVersion >= 0)
+			{
+				// Late Windows 10 -style DPI awareness
+				SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+			}
+			else if (os_info.dwMajorVersion >= 6)
+			{
+				if (os_info.dwMinorVersion >= 3)
+				{
+					// Windows 8.1 style
+					SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+				}
+				else
+				{
+					// Windows vista style
+					SetProcessDPIAware();
+				}
+			}
+			else
+			{
+				// No DPI support!
+			}
 		}
 		else
 		{
-			// No DPI support!
+			// Somehow a version of Windows that does not feature RtlGetVersion!
+			// No DPI adjustment
 		}
 	}
 
