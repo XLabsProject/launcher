@@ -2,18 +2,15 @@
 
 const std::string utils::logger::LOG_FILE_NAME = "xlabs.log";
 std::ofstream utils::logger::log_file_stream;
-std::mutex utils::logger::lock;
 
 void utils::logger::write(std::string msg)
 {
-	lock.lock();
+	std::unique_lock<std::mutex>(write_lock);
 
 	if (ensure_is_initialized())
 	{
 		log_file_stream << msg << "\n";
 	}
-
-	lock.unlock();
 }
 
 bool utils::logger::ensure_is_initialized()

@@ -18,7 +18,5 @@ namespace utils
 		static bool ensure_is_initialized();
 
 		static std::ofstream log_file_stream;
-
-		static std::mutex lock;
 	};
 }
