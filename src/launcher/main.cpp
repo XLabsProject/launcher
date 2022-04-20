@@ -48,11 +48,12 @@ namespace
 		{ 
 			// Late Windows 10 -style DPI awareness
 		}
-		else if (SetProcessDpiAwareness(PROCESS_DPI_UNAWARE) == S_OK)
+		else if (SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE) == S_OK)
 		{
 			// Windows 8.1 style
 		}
-		else if (SetProcessDPIAware()) {
+		else if (SetProcessDPIAware()) 
+		{
 			// Windows 7 style
 		}
 		else
