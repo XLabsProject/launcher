@@ -57,7 +57,7 @@ namespace
 			rtl_get_version(&os_info);
 
 			// See https://docs.microsoft.com/en-us/windows/win32/sysinfo/operating-system-version
-			if (os_info.dwMajorVersion == 10 && os_info.dwMinorVersion >= 0)
+			if (os_info.dwMajorVersion >= 10 && os_info.dwMinorVersion >= 0)
 			{
 				// Late Windows 10 -style DPI awareness
 				SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
