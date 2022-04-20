@@ -44,14 +44,20 @@ namespace
 
 	void enable_dpi_awareness()
 	{
-		const utils::nt::library user32{"user32.dll"};
-		const auto set_dpi = user32
-			                     ? user32.get_proc<BOOL(WINAPI*)(DPI_AWARENESS_CONTEXT)>(
-				                     "SetProcessDpiAwarenessContext")
-			                     : nullptr;
-		if (set_dpi)
+		if (SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)) 
+		{ 
+			// Late Windows 10 -style DPI awareness
+		}
+		else if (SetProcessDpiAwareness(PROCESS_DPI_UNAWARE) == S_OK)
 		{
-			set_dpi(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+			// Windows 8.1 style
+		}
+		else if (SetProcessDPIAware()) {
+			// Windows 7 style
+		}
+		else
+		{
+			// No DPI support!
 		}
 	}
 
