@@ -292,7 +292,7 @@ includedirs {"./src/launcher", "./src/common", "%{prj.location}/src"}
 
 resincludedirs {"$(ProjectDir)src"}
 
-links {"common", "shcore"}
+links {"common"}
 
 prebuildcommands {"pushd %{_MAIN_SCRIPT_DIR}", "tools\\premake5 generate-buildinfo", "popd"}
 
