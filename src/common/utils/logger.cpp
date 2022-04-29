@@ -1,4 +1,5 @@
 #include "logger.hpp"
+#include "nt.hpp"
 
 #include <fstream>
 #include <mutex>
@@ -13,7 +14,7 @@ namespace utils::logger
 
 		std::ofstream& get_stream()
 		{
-			static std::ofstream log_file_stream =
+			static auto log_file_stream =
 				std::ofstream(log_file_name, std::ios_base::out | std::ios_base::trunc);
 			return log_file_stream;
 		}
@@ -25,10 +26,16 @@ namespace utils::logger
 			try
 			{
 				auto& log_file_stream = get_stream();
-				log_file_stream << line << std::endl;
+
+				if (log_file_stream.is_open())
+				{
+					log_file_stream << line << std::endl;
+				}
 			}
 			catch (const std::exception&)
 			{
+				MessageBoxA(nullptr, "Failed to write to the log file.\nSomething is seriously wrong.",
+					nullptr, MB_ICONERROR);
 			}
 		}
 	}
