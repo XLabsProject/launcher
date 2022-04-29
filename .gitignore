@@ -149,5 +149,6 @@ user*.bat
 # Premake binary
 #premake5.exe
 
+local/
 deps/cef
 deps/cef_

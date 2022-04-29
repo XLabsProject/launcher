@@ -1,13 +1,25 @@
 #pragma once
 
-#include "named_mutex.hpp"
 #include <mutex>
 #include <optional>
 
-namespace utils::properties
-{
-	std::unique_lock<named_mutex> lock();
+#include "named_mutex.hpp"
 
-	std::optional<std::string> load(const std::string& name);
-	void store(const std::string& name, const std::string& value);
+namespace utils
+{
+	class properties
+	{
+	public:
+		properties();
+		explicit properties(std::string filePath);
+
+		static std::unique_lock<named_mutex> lock();
+
+		std::optional<std::string> load(const std::string& name) const;
+		void store(const std::string& name, const std::string& value) const;
+
+	private:
+		std::string file_path;
+	};
+
 }
