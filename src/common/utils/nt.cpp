@@ -119,33 +119,33 @@ namespace utils::nt
 		return this->module_ != nullptr && this->get_dos_header()->e_magic == IMAGE_DOS_SIGNATURE;
 	}
 
-	std::string library::get_name() const
+	std::wstring library::get_name() const
 	{
-		if (!this->is_valid()) return "";
+		if (!this->is_valid()) return L"";
 
 		auto path = this->get_path();
-		const auto pos = path.find_last_of("/\\");
-		if (pos == std::string::npos) return path;
+		const auto pos = path.generic_wstring().find_last_of(L"/\\");
+		if (pos == std::string::npos) return path.generic_wstring();
 
-		return path.substr(pos + 1);
+		return path.generic_wstring().substr(pos + 1);
 	}
 
-	std::string library::get_path() const
+	std::filesystem::path library::get_path() const
 	{
 		if (!this->is_valid()) return "";
 
-		char name[MAX_PATH] = {0};
-		GetModuleFileNameA(this->module_, name, sizeof name);
+		wchar_t name[MAX_PATH] = {0};
+		GetModuleFileNameW(this->module_, name, sizeof name);
 
 		return name;
 	}
 
-	std::string library::get_folder() const
+	std::filesystem::path library::get_folder() const
 	{
 		if (!this->is_valid()) return "";
 
-		const auto path = std::filesystem::path(this->get_path());
-		return path.parent_path().generic_string();
+		const auto path = this->get_path();
+		return path.parent_path();
 	}
 
 	void library::free()

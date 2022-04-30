@@ -32,7 +32,7 @@ namespace updater
 		return result;
 	}
 
-	void run(const std::string& base)
+	void run(const std::filesystem::path& base)
 	{
 		const utils::nt::library self;
 		const auto self_file = self.get_path();

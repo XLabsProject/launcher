@@ -14,7 +14,7 @@ namespace utils::properties
 {
 	namespace
 	{
-		std::string get_appdata_path()
+		std::filesystem::path get_appdata_path()
 		{
 			PWSTR path;
 			if (!SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &path)))
@@ -27,12 +27,12 @@ namespace utils::properties
 				CoTaskMemFree(path);
 			});
 
-			return string::convert(path) + "/xlabs/";
+			return std::filesystem::path(path) / "xlabs";
 		}
 
-		const std::string& get_properties_file()
+		const std::filesystem::path& get_properties_file()
 		{
-			static const auto props = get_appdata_path() + "user/properties.json";
+			static const auto props = get_appdata_path() / "user/properties.json";
 			return props;
 		}
 
@@ -81,8 +81,6 @@ namespace utils::properties
 
 	std::optional<std::string> load(const std::string& name)
 	{
-		return std::optional<std::string>();
-
 		const auto _ = lock();
 		const auto doc = load_properties();
 

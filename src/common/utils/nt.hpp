@@ -45,9 +45,9 @@ namespace utils::nt
 		size_t get_relative_entry_point() const;
 
 		bool is_valid() const;
-		std::string get_name() const;
-		std::string get_path() const;
-		std::string get_folder() const;
+		std::wstring get_name() const;
+		std::filesystem::path get_path() const;
+		std::filesystem::path get_folder() const;
 		std::uint8_t* get_ptr() const;
 		void free();
 
