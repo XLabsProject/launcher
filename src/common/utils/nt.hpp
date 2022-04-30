@@ -15,6 +15,7 @@
 #include <string>
 #include <functional>
 #include <filesystem>
+#include <codecvt>
 
 namespace utils::nt
 {
@@ -98,8 +99,8 @@ namespace utils::nt
 
 		void** get_iat_entry(const std::string& module_name, const std::string& proc_name) const;
 
-		static void set_dll_directory(const std::string& directory);
-		static std::string get_dll_directory();
+		static void set_dll_directory(const std::filesystem::path& directory);
+		static std::filesystem::path get_dll_directory();
 		static bool delay_load(const std::string& library);
 
 	private:
@@ -109,7 +110,7 @@ namespace utils::nt
 	__declspec(noreturn) void raise_hard_exception();
 	std::string load_resource(int id);
 
-	void launch_process(const std::string& process, std::string command_line);
+	void launch_process(const std::filesystem::path& process, std::string command_line);
 	void relaunch_self(std::string command_line = GetCommandLineA());
 
 	unsigned long get_parent_pid();

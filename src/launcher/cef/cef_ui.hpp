@@ -11,7 +11,7 @@ namespace cef
 		using command_handler = std::function<void(const rapidjson::Value& request, rapidjson::Document& response)>;
 		using command_handlers = std::unordered_map<std::string, command_handler>;
 
-		cef_ui(utils::nt::library process, std::string path);
+		cef_ui(utils::nt::library process, std::filesystem::path path);
 		~cef_ui();
 
 		HWND get_window() const;
@@ -20,7 +20,7 @@ namespace cef
 		void reload_browser() const;
 
 		int run_process() const;
-		void create(const std::string& folder, const std::string& file);
+		void create(const std::filesystem::path& folder, const std::string& file);
 		void work_once();
 		void work();
 
@@ -31,7 +31,7 @@ namespace cef
 		bool initialized_ = false;
 		command_handlers command_handlers_;
 
-		std::string path_;
+		std::filesystem::path path_;
 		CefRefPtr<CefBrowser> browser_;
 		CefRefPtr<cef_ui_handler> ui_handler_;
 

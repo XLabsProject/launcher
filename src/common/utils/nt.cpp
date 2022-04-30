@@ -212,12 +212,12 @@ namespace utils::nt
 		return nullptr;
 	}
 
-	void library::set_dll_directory(const std::string& directory)
+	void library::set_dll_directory(const std::filesystem::path& directory)
 	{
-		SetDllDirectoryA(directory.data());
+		SetDllDirectoryW(directory.wstring().c_str());
 	}
 
-	std::string library::get_dll_directory()
+	std::filesystem::path library::get_dll_directory()
 	{
 		char directory[MAX_PATH] = {0};
 		if (!GetDllDirectoryA(sizeof(directory), directory))
@@ -259,19 +259,22 @@ namespace utils::nt
 		return std::string(LPSTR(LockResource(handle)), SizeofResource(nullptr, res));
 	}
 
-	void launch_process(const std::string& process, std::string command_line)
+	void launch_process(const std::filesystem::path& process, std::string command_line)
 	{
-		STARTUPINFOA startup_info;
+		STARTUPINFOW startup_info;
 		PROCESS_INFORMATION process_info;
 
 		ZeroMemory(&startup_info, sizeof(startup_info));
 		ZeroMemory(&process_info, sizeof(process_info));
 		startup_info.cb = sizeof(startup_info);
 
-		char current_dir[MAX_PATH];
-		GetCurrentDirectoryA(sizeof(current_dir), current_dir);
+		wchar_t current_dir[MAX_PATH];
+		GetCurrentDirectoryW(MAX_PATH, current_dir);
 
-		CreateProcessA(process.data(), command_line.data(), nullptr, nullptr, false, NULL, nullptr, current_dir,
+		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+		std::wstring wide_command_line = converter.from_bytes(command_line);
+
+		CreateProcessW(process.wstring().data(), wide_command_line.data(), nullptr, nullptr, false, NULL, nullptr, current_dir,
 		               &startup_info, &process_info);
 
 		if (process_info.hThread && process_info.hThread != INVALID_HANDLE_VALUE) CloseHandle(process_info.hThread);
