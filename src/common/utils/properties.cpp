@@ -81,6 +81,8 @@ namespace utils::properties
 
 	std::optional<std::string> load(const std::string& name)
 	{
+		return std::optional<std::string>();
+
 		const auto _ = lock();
 		const auto doc = load_properties();
 
