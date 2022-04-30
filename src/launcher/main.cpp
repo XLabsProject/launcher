@@ -44,47 +44,34 @@ namespace
 
 	void enable_dpi_awareness()
 	{
-		const utils::nt::library ntdll{ "ntdll.dll" };
-		const auto rtl_get_version = ntdll
-			? ntdll.get_proc<NTSTATUS(WINAPI*)(LPOSVERSIONINFOEXW)>(
-				"RtlGetVersion")
+		const utils::nt::library user32{"user32.dll"};
+
+		const auto set_dpi_awareness_context = user32
+			? user32.get_proc<BOOL(WINAPI*)(DPI_AWARENESS_CONTEXT)>("SetProcessDpiAwarenessContext")
 			: nullptr;
 
-		if (rtl_get_version != NULL)
+		// Minimum: Windows 10, version 1703
+		if (set_dpi_awareness_context)
 		{
-			OSVERSIONINFOEXW os_info;
-			os_info.dwOSVersionInfoSize = sizeof(os_info);
-			rtl_get_version(&os_info);
+			set_dpi_awareness_context(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+			return;
+		}
 
-			// See https://docs.microsoft.com/en-us/windows/win32/sysinfo/operating-system-version
-			if (os_info.dwMajorVersion >= 10 && os_info.dwMinorVersion >= 0)
-			{
-				// Late Windows 10 -style DPI awareness
-				SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-			}
-			else if (os_info.dwMajorVersion >= 6)
-			{
-				if (os_info.dwMinorVersion >= 3)
-				{
-					// Windows 8.1 style
-					SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
-				}
-				else
-				{
-					// Windows vista style
-					SetProcessDPIAware();
-				}
-			}
-			else
-			{
-				// No DPI support!
-			}
-		}
-		else
+		const utils::nt::library shcore{"shcore.dll"};
+
+		const auto set_dpi_awareness = shcore
+			? shcore.get_proc<HRESULT(WINAPI*)(PROCESS_DPI_AWARENESS)>("SetProcessDpiAwareness")
+			: nullptr;
+
+		// Minimum: Windows 8.1
+		if (set_dpi_awareness)
 		{
-			// Somehow a version of Windows that does not feature RtlGetVersion!
-			// No DPI adjustment
+			set_dpi_awareness(PROCESS_PER_MONITOR_DPI_AWARE);
+			return;
 		}
+
+		// Call vista function if nothing else was not resolved
+		SetProcessDPIAware();
 	}
 
 	void run_as_singleton()
