@@ -259,10 +259,13 @@ namespace utils::nt
 		return std::string(LPSTR(LockResource(handle)), SizeofResource(nullptr, res));
 	}
 
-	void launch_process(const std::filesystem::path& process, std::string narrow_command_line) {
-		const size_t c_size = narrow_command_line.length() + 1;
+	void launch_process(const std::filesystem::path& process, std::string narrow_command_line)
+	{
+		const auto c_size = narrow_command_line.length() + 1;
 		std::wstring wc(c_size, L'#');
-		mbstowcs(&wc[0], narrow_command_line.c_str(), c_size);
+
+		size_t result;
+		mbstowcs_s(&result, &wc[0], c_size, narrow_command_line.data(), _TRUNCATE);
 
 		launch_process(process, wc);
 	}

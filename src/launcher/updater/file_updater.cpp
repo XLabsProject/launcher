@@ -8,6 +8,7 @@
 #include <utils/http.hpp>
 #include <utils/io.hpp>
 #include <utils/winzip.hpp>
+#include <utils/logger.hpp>
 
 #include <rapidjson/document.h>
 #include <rapidjson/ostreamwrapper.h>
@@ -151,10 +152,12 @@ namespace updater
 	void file_updater::update_file(const file_info& file, bool iw4x_file) const
 	{
 		auto url = get_update_folder() + file.name;
+		utils::logger::write("Updating file {}", url);
 
 		if (iw4x_file)
 		{
 			url = file.name;
+			utils::logger::write("This is an iw4x file, the url has been changed to {} instead", url);
 		}
 
 		const auto data = utils::http::get_data(url, {}, [&](const size_t progress)
@@ -176,10 +179,14 @@ namespace updater
 			out_file = this->base_ / std::filesystem::path(file.name).filename().string();
 		}
 
+		utils::logger::write("Writing file to {}", out_file.string());
+
 		if (!utils::io::write_file(out_file, *data, false))
 		{
 			throw std::runtime_error("Failed to write: " + file.name);
 		}
+
+		utils::logger::write("Done updating file {}", file.name);
 	}
 
 	std::vector<file_info> file_updater::get_outdated_files(const std::vector<file_info>& files) const
@@ -227,6 +234,7 @@ namespace updater
 
 		bool every_update_required = false;
 		std::string data{};
+
 		rapidjson::Document doc{};
 
 		if (utils::io::read_file(revision_file_path, &data))
@@ -235,30 +243,42 @@ namespace updater
 			if (!result || !doc.IsObject())
 			{
 				every_update_required = true;
+				utils::logger::write("Could not load the JSON revision file for iw4x, considering all updates to be necessary");
 			}
 		}
 		else
 		{
+			utils::logger::write("No revision file found for iw4x, considering all updates to be necessary");
 			every_update_required = true;
 		}
 
 		if (every_update_required || doc.HasMember("iw4x_version"))
 		{
+			utils::logger::write("Fetching iw4x-client tag from github...");
+
 			std::optional<std::string> iw4x_tag = get_release_tag("https://api.github.com/repos/XLabsProject/iw4x-client/releases/latest");
 			if (iw4x_tag.has_value())
 			{
 				update_state.library_requires_update = every_update_required || doc["iw4x_version"].GetString() != iw4x_tag.value();
 				update_state.library_latest_tag = iw4x_tag.value();
+
+				utils::logger::write("Got iw4x client tag {}, Requires updating: {}", iw4x_tag.value(),
+					update_state.library_requires_update ? "Yes" : "No");
 			}
 		}
 
 		if (every_update_required || doc.HasMember("rawfile_version"))
 		{
+			utils::logger::write("Fetching iw4x-rawfiles tag from github...");
+
 			std::optional<std::string> rawfiles_tag = get_release_tag("https://api.github.com/repos/XLabsProject/iw4x-rawfiles/releases/latest");
 			if (rawfiles_tag.has_value())
 			{
 				update_state.rawfile_requires_update = every_update_required || doc["rawfile_version"].GetString() != rawfiles_tag.value();
 				update_state.rawfile_latest_tag = rawfiles_tag.value();
+
+				utils::logger::write("Got rawfiles tag {}, Requires updating: {}", rawfiles_tag.value(),
+					update_state.rawfile_requires_update ? "Yes" : "No");
 			}
 		}
 
@@ -286,6 +306,8 @@ namespace updater
 
 	void file_updater::create_iw4x_version_file(std::string rawfile_version, std::string iw4x_version) const
 	{
+		utils::logger::write("Creating iw4x version file in {}: rawfiles are {} and iw4x is {}", this->base_.string(), rawfile_version, iw4x_version);
+
 		std::filesystem::path iw4x_basegame_directory(this->base_);
 
 		rapidjson::Document doc{};
@@ -305,7 +327,14 @@ namespace updater
 
 		std::filesystem::path revision_file_path = iw4x_basegame_directory / IW4X_VERSION_FILE;
 
-		utils::io::write_file(revision_file_path, json);
+		if (utils::io::write_file(revision_file_path, json))
+		{
+			utils::logger::write("File {} written successfully!", revision_file_path.string());
+		}
+		else
+		{
+			utils::logger::write("Error while writing file! {}", std::system_category().message(::GetLastError()));
+		}
 	}
 
 	void file_updater::update_iw4x_if_necessary() const
@@ -325,11 +354,12 @@ namespace updater
 			{
 				files_to_update.emplace_back(IW4X_RAWFILES_UPDATE_URL);
 			}
-
+			utils::logger::write("Updating iw4x files");
 			update_files(files_to_update, /*iw4x_file=*/true);
 
 			if (update_state.rawfile_requires_update)
 			{
+				utils::logger::write("Deploying iw4x rawfiles");
 				deploy_iw4x_rawfiles();
 			}
 
