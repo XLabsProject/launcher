@@ -51,7 +51,6 @@
 #pragma warning(pop)
 
 #pragma comment(lib, "Dwmapi.lib")
-#pragma comment(lib, "Shcore.lib")
 
 #ifdef DEBUG
 #define CONFIG_NAME "debug"
