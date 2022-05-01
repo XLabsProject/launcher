@@ -214,7 +214,7 @@ namespace utils::nt
 
 	void library::set_dll_directory(const std::filesystem::path& directory)
 	{
-		SetDllDirectoryW(directory.wstring().c_str());
+		SetDllDirectoryW(directory.wstring().data());
 	}
 
 	std::filesystem::path library::get_dll_directory()
