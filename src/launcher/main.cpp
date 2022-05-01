@@ -33,9 +33,9 @@ namespace
 			CoTaskMemFree(path);
 		});
 
-		auto fsPath = std::filesystem::path(path) / "xlabs";
+		auto fs_path = std::filesystem::path(path) / "xlabs";
 
-		return fsPath;
+		return fs_path;
 	}
 
 	void set_working_directory()
@@ -323,7 +323,7 @@ namespace
 			}
 
 			const std::string channel{value.GetString(), value.GetStringLength()};
-			const auto* const command_line = channel == "main" ? "--xlabs-channel-main" : "--xlabs-channel-develop";
+			const wchar_t* const command_line = channel == "main" ? L"--xlabs-channel-main" : L"--xlabs-channel-develop";
 
 			utils::at_exit([command_line]()
 			{

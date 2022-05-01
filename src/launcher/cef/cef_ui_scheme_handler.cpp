@@ -409,14 +409,16 @@ namespace cef
 		}
 
 		// Prevents files starting with a / from interacting badly with std::fs::path / concatenation
-		while (path[0] == '/') {
+		while (path[0] == '/') 
+		{
 			path.erase(0, 1);
 		}
 
 		const auto file = this->folder_ / path;
 		std::string content;
 
-		if (utils::io::read_file(file, &content)) {
+		if (utils::io::read_file(file, &content)) 
+		{
 			const auto& mime_type = get_mime_type(file);
 
 			const auto stream = CefStreamReader::CreateForData(content.data(), content.size());

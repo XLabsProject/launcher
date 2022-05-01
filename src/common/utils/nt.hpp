@@ -15,7 +15,6 @@
 #include <string>
 #include <functional>
 #include <filesystem>
-#include <codecvt>
 
 namespace utils::nt
 {
@@ -110,8 +109,9 @@ namespace utils::nt
 	__declspec(noreturn) void raise_hard_exception();
 	std::string load_resource(int id);
 
-	void launch_process(const std::filesystem::path& process, std::string command_line);
-	void relaunch_self(std::string command_line = GetCommandLineA());
+	void launch_process(const std::filesystem::path& process, std::wstring command_line);
+	void launch_process(const std::filesystem::path& process, std::string narrow_command_line);
+	void relaunch_self(std::wstring command_line = GetCommandLineW());
 
 	unsigned long get_parent_pid();
 	bool wait_for_process(unsigned long pid);

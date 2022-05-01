@@ -121,7 +121,7 @@ namespace utils::nt
 
 	std::wstring library::get_name() const
 	{
-		if (!this->is_valid()) return L"";
+		if (!this->is_valid()) return {};
 
 		auto path = this->get_path();
 		const auto pos = path.generic_wstring().find_last_of(L"/\\");
@@ -132,10 +132,10 @@ namespace utils::nt
 
 	std::filesystem::path library::get_path() const
 	{
-		if (!this->is_valid()) return "";
+		if (!this->is_valid()) return {};
 
 		wchar_t name[MAX_PATH] = {0};
-		GetModuleFileNameW(this->module_, name, sizeof name);
+		GetModuleFileNameW(this->module_, name, MAX_PATH);
 
 		return name;
 	}
@@ -219,8 +219,8 @@ namespace utils::nt
 
 	std::filesystem::path library::get_dll_directory()
 	{
-		char directory[MAX_PATH] = {0};
-		if (!GetDllDirectoryA(sizeof(directory), directory))
+		wchar_t directory[MAX_PATH] = {0};
+		if (!GetDllDirectoryW(MAX_PATH, directory))
 		{
 			return {};
 		}
@@ -259,7 +259,15 @@ namespace utils::nt
 		return std::string(LPSTR(LockResource(handle)), SizeofResource(nullptr, res));
 	}
 
-	void launch_process(const std::filesystem::path& process, std::string command_line)
+	void launch_process(const std::filesystem::path& process, std::string narrow_command_line) {
+		const size_t c_size = narrow_command_line.length() + 1;
+		std::wstring wc(c_size, L'#');
+		mbstowcs(&wc[0], narrow_command_line.c_str(), c_size);
+
+		launch_process(process, wc);
+	}
+
+	void launch_process(const std::filesystem::path& process, std::wstring command_line)
 	{
 		STARTUPINFOW startup_info;
 		PROCESS_INFORMATION process_info;
@@ -271,17 +279,14 @@ namespace utils::nt
 		wchar_t current_dir[MAX_PATH];
 		GetCurrentDirectoryW(MAX_PATH, current_dir);
 
-		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-		std::wstring wide_command_line = converter.from_bytes(command_line);
-
-		CreateProcessW(process.wstring().data(), wide_command_line.data(), nullptr, nullptr, false, NULL, nullptr, current_dir,
+		CreateProcessW(process.wstring().data(), command_line.data(), nullptr, nullptr, false, NULL, nullptr, current_dir,
 		               &startup_info, &process_info);
 
 		if (process_info.hThread && process_info.hThread != INVALID_HANDLE_VALUE) CloseHandle(process_info.hThread);
 		if (process_info.hProcess && process_info.hProcess != INVALID_HANDLE_VALUE) CloseHandle(process_info.hProcess);
 	}
 
-	void relaunch_self(std::string command_line)
+	void relaunch_self(std::wstring command_line)
 	{
 		const utils::nt::library self;
 		launch_process(self.get_path(), std::move(command_line));
