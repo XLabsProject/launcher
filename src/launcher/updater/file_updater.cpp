@@ -179,7 +179,7 @@ namespace updater
 			out_file = this->base_ / std::filesystem::path(file.name).filename().string();
 		}
 
-		utils::logger::write("Writing file to {} ", out_file);
+		utils::logger::write("Writing file to {}", out_file.string());
 
 		if (!utils::io::write_file(out_file, *data, false))
 		{
@@ -306,7 +306,7 @@ namespace updater
 
 	void file_updater::create_iw4x_version_file(std::string rawfile_version, std::string iw4x_version) const
 	{
-		utils::logger::write("Creating iw4x version file in {}: rawfiles are {} and iw4x is {}", this->base_, rawfile_version, iw4x_version);
+		utils::logger::write("Creating iw4x version file in {}: rawfiles are {} and iw4x is {}", this->base_.string(), rawfile_version, iw4x_version);
 
 		std::filesystem::path iw4x_basegame_directory(this->base_);
 
