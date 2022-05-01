@@ -15,8 +15,6 @@
 #include <rapidjson/writer.h>
 #include <iostream>
 
-#include <unzip.h>
-
 #define UPDATE_SERVER "https://master.xlabs.dev/"
 
 #define UPDATE_FILE_MAIN UPDATE_SERVER "files.json"
