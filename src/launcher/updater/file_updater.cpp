@@ -7,6 +7,7 @@
 #include <utils/cryptography.hpp>
 #include <utils/http.hpp>
 #include <utils/io.hpp>
+#include <utils/winzip.hpp>
 
 #include <rapidjson/document.h>
 #include <rapidjson/ostreamwrapper.h>
@@ -347,111 +348,8 @@ namespace updater
 			throw std::runtime_error("I'm supposed to deploy rawfiles from " + rawfiles_zip.generic_string() + ", but where is it?\nCould not find the downloaded update file.");
 		}
 
-		unzFile file = unzOpen64(reinterpret_cast<const void*>(rawfiles_zip.wstring().c_str()));
-
-		if (!file)
-		{
-			// The zip could not be opened! 
-			throw std::runtime_error("Could not open file " + rawfiles_zip.generic_string() + ", is it a valid zip file?");
-		}
-		
-		constexpr uint16_t READ_SIZE = 1024;
-		constexpr uint8_t MAX_FILENAME = 255;
-
-		char read_buffer[READ_SIZE] = {0};
-
-		unz_global_info global_info;
-		if (unzGetGlobalInfo(file, &global_info) == UNZ_OK)
-		{
-			// Loop to extract all files
-			uLong i;
-			for (i = 0; i < global_info.number_entry; ++i)
-			{
-				// Get info about current file.
-				unz_file_info file_info;
-				char filename[MAX_FILENAME] = {0};
-
-				if (unzGetCurrentFileInfo(
-					file,
-					&file_info,
-					filename,
-					MAX_FILENAME,
-					nullptr, 0, nullptr, 0) == UNZ_OK)
-				{
-					// Check if this entry is a directory or file.
-					const auto filename_length = strlen(filename);
-					if (filename[filename_length - 1] == '/' || filename[filename_length - 1] == '\\') // ZIP is not directory-separator-agnostic
-					{
-						// Entry is a directory, so create it.
-						utils::io::create_directory(base_ / filename);
-					}
-					else
-					{
-						// Entry is a file, so extract it.
-						if (unzOpenCurrentFile(file) == UNZ_OK)
-						{
-							// Open a file to write out the data.
-							std::ofstream out(base_ / filename, std::ios::out | std::ios::binary | std::ios::trunc);
-							if (out.is_open())
-							{
-								bool firstLoop = true;
-								int readBytes = UNZ_OK;
-								while (firstLoop || readBytes > 0)
-								{
-									firstLoop = false;
-									readBytes = unzReadCurrentFile(file, read_buffer, READ_SIZE);
-									if (readBytes < 0)
-									{
-										// There was an error reading data
-										throw std::runtime_error("Error while reading" + std::string(filename) + " from the zip!");
-										break;
-									}
-
-									// Write data to file.
-									if (readBytes > 0)
-									{
-										out.write(read_buffer, readBytes);
-									}
-									else 
-									{
-										// No more data to read, the loop will break
-										// This is normal behaviour
-									}
-								} 
-
-								out.close();
-							}
-							else
-							{
-								// Could not open file for writing!
-								auto error = GetLastError();
-								throw std::runtime_error("Failed to open file "+ std::string(filename) + " from "+base_.string() + " for writing! Error code " + std::to_string(error));
-							}
-
-							unzCloseCurrentFile(file);
-						}
-						else 
-						{
-							// Could not read file from the ZIP
-							throw std::runtime_error("Failed to read file " + std::string(filename) + " from the releases ZIP!");
-						}
-					}
-
-					// Go the the next entry listed in the zip file.
-					if ((i + 1) < global_info.number_entry)
-					{
-						int entry_state = unzGoToNextFile(file);
-						if (entry_state != UNZ_OK)
-						{
-							unzClose(file);
-							throw std::runtime_error("Failed to fetch next entry "+std::to_string(i)+" in file (entry state is "+std::to_string(entry_state)+".");
-						}
-					}
-				}
-			}
-		}
-
-		unzClose(file);
+		// the goal is now to unzip rawfiles_zip into base_
+		utils::zip::unzip(rawfiles_zip, base_);
 
 		bool has_removed_file = utils::io::remove_file(rawfiles_zip);
 
