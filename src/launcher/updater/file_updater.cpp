@@ -347,7 +347,7 @@ namespace updater
 			throw std::runtime_error("I'm supposed to deploy rawfiles from " + rawfiles_zip.generic_string() + ", but where is it?\nCould not find the downloaded update file.");
 		}
 
-		unzFile file = unzOpen(reinterpret_cast<const char*>(rawfiles_zip.wstring().c_str()));
+		unzFile file = unzOpen64(reinterpret_cast<const void*>(rawfiles_zip.wstring().c_str()));
 
 		if (!file)
 		{

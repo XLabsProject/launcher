@@ -34,6 +34,8 @@ function minizip.project()
 
 		defines {
 			"_CRT_SECURE_NO_DEPRECATE",
+			"IOWIN32_USING_WINRT_API",
+			"UNICODE"
 		}
 
 		warnings "Off"
