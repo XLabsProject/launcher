@@ -13,8 +13,8 @@ namespace utils::zip
 		if (SUCCEEDED(h_result))
 		{
 
-			h_result = CoCreateInstance
-			(CLSID_Shell, NULL, CLSCTX_INPROC_SERVER, IID_IShellDispatch, (void**)&p_shelldispatch);
+			h_result = CoCreateInstance(
+				CLSID_Shell, nullptr, CLSCTX_INPROC_SERVER, IID_IShellDispatch, (void**)&p_shelldispatch);
 
 			if (SUCCEEDED(h_result))
 			{
@@ -46,7 +46,7 @@ namespace utils::zip
 #else
 					variant_opt.lVal = FOF_NO_UI; // Windows vista+ only, but this is okay
 #endif
-				// Creating a new Variant with pointer to FolderItems to be copied
+					// Creating a new Variant with pointer to FolderItems to be copied
 					VARIANT variant_to;
 					VariantInit(&variant_to);
 					variant_to.vt = VT_DISPATCH;

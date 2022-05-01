@@ -232,9 +232,8 @@ namespace updater
 		std::filesystem::path iw4x_basegame_directory(this->base_);
 		std::filesystem::path revision_file_path = iw4x_basegame_directory / IW4X_VERSION_FILE;
 
-		bool every_update_required = false;
+		auto every_update_required = false;
 		std::string data{};
-
 		rapidjson::Document doc{};
 
 		if (utils::io::read_file(revision_file_path, &data))
@@ -354,6 +353,7 @@ namespace updater
 			{
 				files_to_update.emplace_back(IW4X_RAWFILES_UPDATE_URL);
 			}
+
 			utils::logger::write("Updating iw4x files");
 			update_files(files_to_update, /*iw4x_file=*/true);
 
@@ -386,7 +386,8 @@ namespace updater
 		if (!has_removed_file)
 		{
 			auto error = GetLastError();
-			throw std::runtime_error("Failed to remove "+rawfiles_zip.string() + ", this is not supposed to happen! Error code " + std::to_string(error));
+			throw std::runtime_error("Failed to remove " + rawfiles_zip.string() +
+				", this is not supposed to happen! Error code " + std::to_string(error));
 		}
 	}
 

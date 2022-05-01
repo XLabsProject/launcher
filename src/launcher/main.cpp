@@ -323,7 +323,7 @@ namespace
 			}
 
 			const std::string channel{value.GetString(), value.GetStringLength()};
-			const wchar_t* const command_line = channel == "main" ? L"--xlabs-channel-main" : L"--xlabs-channel-develop";
+			const auto* const command_line = channel == "main" ? L"--xlabs-channel-main" : L"--xlabs-channel-develop";
 
 			utils::at_exit([command_line]()
 			{

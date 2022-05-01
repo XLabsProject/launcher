@@ -21,7 +21,7 @@ namespace utils::nt
 	{
 		HMODULE handle = nullptr;
 		GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-						   static_cast<LPCSTR>(address), &handle);
+						static_cast<LPCSTR>(address), &handle);
 		return library(handle);
 	}
 
@@ -99,7 +99,7 @@ namespace utils::nt
 
 		DWORD protection;
 		VirtualProtect(this->get_ptr(), this->get_optional_header()->SizeOfImage, PAGE_EXECUTE_READWRITE,
-					   &protection);
+						&protection);
 	}
 
 	size_t library::get_relative_entry_point() const
@@ -283,7 +283,7 @@ namespace utils::nt
 		GetCurrentDirectoryW(MAX_PATH, current_dir);
 
 		CreateProcessW(process.wstring().data(), command_line.data(), nullptr, nullptr, false, NULL, nullptr, current_dir,
-					   &startup_info, &process_info);
+					&startup_info, &process_info);
 
 		if (process_info.hThread && process_info.hThread != INVALID_HANDLE_VALUE) CloseHandle(process_info.hThread);
 		if (process_info.hProcess && process_info.hProcess != INVALID_HANDLE_VALUE) CloseHandle(process_info.hProcess);
