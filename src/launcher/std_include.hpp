@@ -10,6 +10,7 @@
 #include <Windows.h>
 #include <ShlObj.h>
 #include <dwmapi.h>
+#include <ShellScalingApi.h>
 
 #include <string>
 #include <mutex>
