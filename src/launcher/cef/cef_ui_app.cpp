@@ -21,7 +21,6 @@ namespace cef
 	{
 		command_line->AppendSwitch("enable-experimental-web-platform-features");
 		command_line->AppendSwitch("in-process-gpu");
-		command_line->AppendSwitchWithValue("force-device-scale-factor", "1"); // Fixes "double" DPI scaling (one by chromium, one by windows) resulting in abnormal zoom
 		command_line->AppendSwitchWithValue("default-encoding", "utf-8");
 	}
 }

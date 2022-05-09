@@ -254,6 +254,45 @@ namespace cef
 			}
 		}
 
+		if (message == WM_DPICHANGED && window == root_window)
+		{
+			PostMessageA(window, WM_DELAYEDDPICHANGE, 0, 0);
+		}
+
+		if (message == WM_DELAYEDDPICHANGE && window == root_window)
+		{
+			RECT rect;
+			GetWindowRect(window, &rect);
+
+			const auto width = rect.right - rect.left;
+			const auto height = rect.bottom - rect.top;
+
+			POINT center
+			{
+				rect.left + width / 2,
+				rect.top + height / 2,
+			};
+
+			const auto dpi_scale = get_dpi_scale(window);
+			const auto last_scale = get_last_dpi_scale(window);
+			store_dpi_scale(window, dpi_scale);
+
+			const auto new_width = int((width * dpi_scale) / last_scale);
+			const auto new_height = int((height * dpi_scale) / last_scale);
+
+			const auto new_x = center.x - (new_width / 2);
+			const auto new_y = center.y - (new_height / 2);
+
+			MoveWindow(window, new_x, new_y, new_width, new_height, TRUE);
+
+			// Update rounded corners
+			SetWindowRgn(window, CreateRoundRectRgn(0, 0, rect.right - rect.left, rect.bottom - rect.top, 15, 15),
+			             TRUE);
+
+			this->update_drag_regions(window);
+			return TRUE;
+		}
+
 		const auto handler_func = static_cast<decltype(DefWindowProcW)*>(handler);
 		return handler_func(window, message, w_param, l_param);
 	}
