@@ -230,6 +230,9 @@ namespace
 			file_updater.update_iw4x_if_necessary();
 
 			const auto iw4x_exe = mw2_install.value() + "\\iw4x.exe";
+			const auto dll_path = get_appdata_path() + "data/iw4x";
+
+			utils::nt::update_dll_search_path(dll_path);
 			utils::nt::launch_process(iw4x_exe, mapped_arg->second);
 
 			cef_ui.close_browser();

@@ -29,7 +29,6 @@
 #define IW4X_VERSION_FILE ".version.json"
 #define IW4X_RAWFILES_UPDATE_FILE "release.zip"
 #define IW4X_RAWFILES_UPDATE_URL "https://github.com/XLabsProject/iw4x-rawfiles/releases/latest/download/" IW4X_RAWFILES_UPDATE_FILE
-#define IW4X_LIBRARY_UPDATE_URL "https://github.com/XLabsProject/iw4x-client/releases/latest/download/iw4x.dll"
 
 namespace updater
 {
@@ -251,20 +250,6 @@ namespace updater
 			every_update_required = true;
 		}
 
-		if (every_update_required || doc.HasMember("iw4x_version"))
-		{
-			utils::logger::write("Fetching iw4x-client tag from github...");
-			std::optional<std::string> iw4x_tag = get_release_tag("https://api.github.com/repos/XLabsProject/iw4x-client/releases/latest");
-			if (iw4x_tag.has_value())
-			{
-				update_state.library_requires_update = every_update_required || doc["iw4x_version"].GetString() != iw4x_tag.value();
-				update_state.library_latest_tag = iw4x_tag.value();
-
-				utils::logger::write("Got iw4x client tag {}, Requires updating: {}", iw4x_tag.value(),
-					update_state.library_requires_update ? "Yes" : "No");
-			}
-		}
-
 		if (every_update_required || doc.HasMember("rawfile_version"))
 		{
 			utils::logger::write("Fetching iw4x-rawfiles tag from github...");
@@ -279,10 +264,10 @@ namespace updater
 			}
 		}
 
-		return every_update_required || update_state.library_requires_update || update_state.rawfile_requires_update;
+		return every_update_required || update_state.rawfile_requires_update;
 	}
 
-	std::optional<std::string> file_updater::get_release_tag(std::string release_url) const
+	std::optional<std::string> file_updater::get_release_tag(const std::string& release_url) const
 	{
 		std::optional<std::string> iw4x_release_info = utils::http::get_data(release_url);
 		if (iw4x_release_info.has_value())
@@ -298,12 +283,12 @@ namespace updater
 			}
 		}
 
-		return std::optional<std::string>();
+		return {};
 	}
 
-	void file_updater::create_iw4x_version_file(std::string rawfile_version, std::string iw4x_version) const
+	void file_updater::create_iw4x_version_file(std::string rawfile_version) const
 	{
-		utils::logger::write("Creating iw4x version file in {}: rawfiles are {} and iw4x is {}", this->base_, rawfile_version, iw4x_version);
+		utils::logger::write("Creating iw4x version file in {}: rawfiles are {}", this->base_, rawfile_version);
 		std::filesystem::path iw4x_basegame_directory(this->base_);
 
 		rapidjson::Document doc{};
@@ -315,7 +300,6 @@ namespace updater
 		doc.SetObject();
 
 		doc.AddMember("rawfile_version", rawfile_version, doc.GetAllocator());
-		doc.AddMember("iw4x_version", iw4x_version, doc.GetAllocator());
 
 		doc.Accept(writer);
 
@@ -329,7 +313,7 @@ namespace updater
 		}
 		else
 		{
-			utils::logger::write("Error while writing file! {}", std::system_category().message(::GetLastError()));
+			utils::logger::write("Error while writing file! {}", std::system_category().message(static_cast<int>(::GetLastError())));
 		}
 	}
 
@@ -340,11 +324,6 @@ namespace updater
 		if (does_iw4x_require_update(update_state))
 		{
 			std::vector<file_info> files_to_update{};
-
-			if (update_state.library_requires_update)
-			{
-				files_to_update.emplace_back(IW4X_LIBRARY_UPDATE_URL);
-			}
 
 			if (update_state.rawfile_requires_update)
 			{
@@ -361,7 +340,7 @@ namespace updater
 			}
 
 			// Do this last to make sure we don't ever create a versionfile when something failed
-			create_iw4x_version_file(update_state.rawfile_latest_tag, update_state.library_latest_tag);
+			create_iw4x_version_file(update_state.rawfile_latest_tag);
 		}
 	}
 
@@ -392,8 +371,7 @@ namespace updater
 		if (unzGetGlobalInfo(file, &global_info) == UNZ_OK)
 		{
 			// Loop to extract all files
-			uLong i;
-			for (i = 0; i < global_info.number_entry; ++i)
+			for (uLong i = 0; i < global_info.number_entry; ++i)
 			{
 				// Get info about current file.
 				unz_file_info file_info;
@@ -473,7 +451,7 @@ namespace updater
 						if (entry_state != UNZ_OK)
 						{
 							unzClose(file);
-							throw std::runtime_error("Failed to fetch next entry "+std::to_string(i)+" in file (entry state is "+std::to_string(entry_state)+".");
+							throw std::runtime_error("Failed to fetch next entry " + std::to_string(i) + " in file (entry state is " + std::to_string(entry_state) + ")");
 						}
 					}
 				}
