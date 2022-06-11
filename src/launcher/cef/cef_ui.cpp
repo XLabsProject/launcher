@@ -102,11 +102,11 @@ namespace cef
 
 		CefWindowInfo window_info;
 		window_info.SetAsPopup(nullptr, "X Labs"s + (updater::is_main_channel() ? "" : " (DEV-BUILD)"));
-		window_info.width = 800 * (GetDpiForSystem() / USER_DEFAULT_SCREEN_DPI);
-		window_info.height = 475 * (GetDpiForSystem() / USER_DEFAULT_SCREEN_DPI);
+		window_info.width = LAUNCHER_WINDOW_WIDTH; //GetSystemMetrics(SM_CXVIRTUALSCREEN);
+		window_info.height = LAUNCHER_WINDOW_HEIGHT; //GetSystemMetrics(SM_CYVIRTUALSCREEN);
 		window_info.x = (GetSystemMetrics(SM_CXSCREEN) - window_info.width) / 2;
 		window_info.y = (GetSystemMetrics(SM_CYSCREEN) - window_info.height) / 2;
-		window_info.style = WS_SIZEBOX | WS_POPUP;
+		window_info.style = WS_POPUP | WS_THICKFRAME | WS_CAPTION;
 
 		if (!this->ui_handler_)
 		{
@@ -147,6 +147,7 @@ namespace cef
 		: process_(std::move(process)), path_(std::move(path))
 	{
 		delay_load_cef(this->path_ / CEF_PATH);
+		CefEnableHighDPISupport();
 	}
 
 	cef_ui::~cef_ui()

@@ -23,9 +23,7 @@ namespace updater
 		struct iw4x_update_state 
 		{
 			bool rawfile_requires_update = false;
-			bool library_requires_update = false;
 			std::string rawfile_latest_tag;
-			std::string library_latest_tag;
 		};
 
 		progress_listener& listener_;
@@ -44,8 +42,8 @@ namespace updater
 		void delete_old_process_file() const;
 
 		// IW4X-specific
-		void create_iw4x_version_file(std::string rawfile_version, std::string iw4x_version) const;
-		std::optional<std::string> get_release_tag(std::string release_url) const;
+		void create_iw4x_version_file(std::string rawfile_version) const;
+		std::optional<std::string> get_release_tag(const std::string& release_url) const;
 		bool does_iw4x_require_update(iw4x_update_state& update_state) const;
 		void deploy_iw4x_rawfiles() const;
 

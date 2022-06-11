@@ -295,6 +295,12 @@ namespace utils::nt
 		launch_process(self.get_path(), std::move(command_line));
 	}
 
+	void update_dll_search_path(const std::string& directory)
+	{
+		const utils::nt::library self;
+		self.set_dll_directory(directory);
+	}
+
 	unsigned long get_parent_pid()
 	{
 		const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);

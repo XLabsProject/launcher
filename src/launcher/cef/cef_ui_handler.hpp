@@ -1,6 +1,8 @@
 #pragma once
 
 #define WM_DELAYEDDPICHANGE (WM_USER + 0x123)
+#define LAUNCHER_WINDOW_WIDTH (800)
+#define LAUNCHER_WINDOW_HEIGHT (475)
 
 namespace cef
 {

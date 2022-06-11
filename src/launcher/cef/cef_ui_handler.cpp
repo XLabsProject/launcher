@@ -51,7 +51,7 @@ namespace cef
 				return 1.0;
 			}
 
-			const auto unaware_dpi = 96.0;
+			constexpr auto unaware_dpi = USER_DEFAULT_SCREEN_DPI * 1.0;
 			const auto dpi = get_dpi(window);
 			return static_cast<number>(dpi / unaware_dpi);
 		}
@@ -252,6 +252,50 @@ namespace cef
 			{
 				return 0;
 			}
+		}
+
+		if (message == WM_DPICHANGED && window == root_window)
+		{
+			PostMessageA(window, WM_DELAYEDDPICHANGE, 0, 0);
+		}
+
+		if (message == WM_SIZE && window == root_window)
+		{
+			PostMessageA(window, WM_DELAYEDDPICHANGE, 0, 0);
+		}
+
+		if (message == WM_DELAYEDDPICHANGE && window == root_window)
+		{
+			RECT rect;
+			GetWindowRect(window, &rect);
+
+			const auto width = rect.right - rect.left;
+			const auto height = rect.bottom - rect.top;
+
+			const POINT center
+			{
+				rect.left + width / 2,
+				rect.top + height / 2,
+			};
+
+			const auto dpi_scale = get_dpi_scale(window);
+			//const auto last_scale = get_last_dpi_scale(window);
+			//store_dpi_scale(window, dpi_scale);
+
+			const auto new_width = int(LAUNCHER_WINDOW_WIDTH * dpi_scale); //int((width * dpi_scale) / last_scale);
+			const auto new_height = int(LAUNCHER_WINDOW_HEIGHT * dpi_scale);//int((height * dpi_scale) / last_scale);
+
+			const auto new_x = center.x - (new_width / 2);
+			const auto new_y = center.y - (new_height / 2);
+
+			SetWindowPos(window, nullptr, new_x, new_y, new_width, new_height, SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+
+			// Update rounded corners
+			SetWindowRgn(window, CreateRoundRectRgn(0, 0, rect.right - rect.left, rect.bottom - rect.top, 15, 15),
+			             TRUE);
+
+			this->update_drag_regions(window);
+			return TRUE;
 		}
 
 		const auto handler_func = static_cast<decltype(DefWindowProcW)*>(handler);
