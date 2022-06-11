@@ -295,7 +295,7 @@ namespace utils::nt
 		launch_process(self.get_path(), std::move(command_line));
 	}
 
-	void update_dll_search_path(const std::string& directory)
+	void update_dll_search_path(const std::filesystem::path& directory)
 	{
 		const utils::nt::library self;
 		self.set_dll_directory(directory);

@@ -152,7 +152,7 @@ namespace
 			SetEnvironmentVariableA("XLABS_AW_INSTALL", aw_install->data());
 
 			const auto s1x_exe = get_appdata_path() / "data/s1x/s1x.exe";
-			utils::nt::launch_process(s1x_exe, mapped_arg->second);
+			utils::nt::launch_process(s1x_exe, utils::string::convert(mapped_arg->second));
 
 			cef_ui.close_browser();
 		});
@@ -191,7 +191,7 @@ namespace
 			SetEnvironmentVariableA("XLABS_GHOSTS_INSTALL", ghosts_install->data());
 
 			const auto iw6x_exe = get_appdata_path() / "data/iw6x/iw6x.exe";
-			utils::nt::launch_process(iw6x_exe, mapped_arg->second);
+			utils::nt::launch_process(iw6x_exe, utils::string::convert(mapped_arg->second));
 
 			cef_ui.close_browser();
 		});
@@ -232,10 +232,10 @@ namespace
 			file_updater.update_iw4x_if_necessary();
 
 			const auto iw4x_exe = mw2_install.value() + "\\iw4x.exe";
-			const auto dll_path = get_appdata_path() + "data/iw4x";
+			const auto dll_path = get_appdata_path() / "data/iw4x";
 
 			utils::nt::update_dll_search_path(dll_path);
-			utils::nt::launch_process(iw4x_exe, mapped_arg->second);
+			utils::nt::launch_process(iw4x_exe, utils::string::convert(mapped_arg->second));
 
 			cef_ui.close_browser();
 		});
