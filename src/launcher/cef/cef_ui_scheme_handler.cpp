@@ -364,7 +364,7 @@ namespace cef
 			return mime_type_map;
 		}
 
-		const std::string& get_mime_type(const std::string& file)
+		const std::string& get_mime_type(const std::wstring& file)
 		{
 			auto extension = std::filesystem::path(file).extension().string();
 			if (!extension.empty() && extension.front() == '.')
@@ -384,7 +384,7 @@ namespace cef
 		}
 	}
 
-	cef_ui_scheme_handler_factory::cef_ui_scheme_handler_factory(std::string folder,
+	cef_ui_scheme_handler_factory::cef_ui_scheme_handler_factory(std::filesystem::path  folder,
 	                                                             const command_handlers& command_handlers)
 		: folder_(std::move(folder))
 		  , command_handlers_(command_handlers)
@@ -401,19 +401,31 @@ namespace cef
 		CefURLParts url_parts{};
 		CefParseURL(request->GetURL(), url_parts);
 
-		const auto path = CefString(&url_parts.path).ToString();
+		auto path = CefString(&url_parts.path).ToString();
 		auto* const result = this->handle_command(request, path);
 		if (result)
 		{
 			return result;
 		}
 
-		const auto file = this->folder_ + path;
-		auto content = utils::io::read_file(file);
-		const auto& mime_type = get_mime_type(file);
+		// Prevents files starting with a / from interacting badly with std::fs::path / concatenation
+		while (path[0] == '/') 
+		{
+			path.erase(0, 1);
+		}
 
-		const auto stream = CefStreamReader::CreateForData(content.data(), content.size());
-		return new CefStreamResourceHandler(mime_type, stream);
+		const auto file = this->folder_ / path;
+		std::string content;
+
+		if (utils::io::read_file(file, &content)) 
+		{
+			const auto& mime_type = get_mime_type(file);
+
+			const auto stream = CefStreamReader::CreateForData(content.data(), content.size());
+			return new CefStreamResourceHandler(mime_type, stream);
+		}
+
+		throw std::runtime_error("Could not read file at " + file.string());
 	}
 
 	CefResourceHandler* cef_ui_scheme_handler_factory::handle_command(const CefRefPtr<CefRequest>& request,

@@ -44,9 +44,9 @@ namespace utils::nt
 		size_t get_relative_entry_point() const;
 
 		bool is_valid() const;
-		std::string get_name() const;
-		std::string get_path() const;
-		std::string get_folder() const;
+		std::wstring get_name() const;
+		std::filesystem::path get_path() const;
+		std::filesystem::path get_folder() const;
 		std::uint8_t* get_ptr() const;
 		void free();
 
@@ -98,8 +98,8 @@ namespace utils::nt
 
 		void** get_iat_entry(const std::string& module_name, const std::string& proc_name) const;
 
-		static void set_dll_directory(const std::string& directory);
-		static std::string get_dll_directory();
+		static void set_dll_directory(const std::filesystem::path& directory);
+		static std::filesystem::path get_dll_directory();
 		static bool delay_load(const std::string& library);
 
 	private:
@@ -109,9 +109,9 @@ namespace utils::nt
 	__declspec(noreturn) void raise_hard_exception();
 	std::string load_resource(int id);
 
-	void launch_process(const std::string& process, std::string command_line);
-	void relaunch_self(std::string command_line = GetCommandLineA());
-	void update_dll_search_path(const std::string& directory);
+	void launch_process(const std::filesystem::path& process, std::wstring command_line);
+	void relaunch_self(std::wstring command_line = GetCommandLineW());
+	void update_dll_search_path(const std::filesystem::path& directory);
 
 	unsigned long get_parent_pid();
 	bool wait_for_process(unsigned long pid);

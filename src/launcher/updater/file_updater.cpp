@@ -7,14 +7,13 @@
 #include <utils/cryptography.hpp>
 #include <utils/http.hpp>
 #include <utils/io.hpp>
+#include <utils/winzip.hpp>
 #include <utils/logger.hpp>
 
 #include <rapidjson/document.h>
 #include <rapidjson/ostreamwrapper.h>
 #include <rapidjson/writer.h>
 #include <iostream>
-
-#include <unzip.h>
 
 #define UPDATE_SERVER "https://master.xlabs.dev/"
 
@@ -120,12 +119,12 @@ namespace updater
 		}
 	}
 
-	file_updater::file_updater(progress_listener& listener, std::string base, std::string process_file)
+	file_updater::file_updater(progress_listener& listener, const std::filesystem::path base, std::filesystem::path process_file)
 		: listener_(listener)
 		, base_(std::move(base))
 		, process_file_(std::move(process_file))
 	{
-		this->dead_process_file_ = this->process_file_ + ".old";
+		this->dead_process_file_ = std::filesystem::path(this->process_file_.generic_wstring() + L".old");
 		this->delete_old_process_file();
 	}
 
@@ -174,10 +173,10 @@ namespace updater
 		// IW4x hack to fetch release from github
 		if (iw4x_file)
 		{
-			out_file = this->base_ + std::filesystem::path(file.name).filename().string();
+			out_file = this->base_ / std::filesystem::path(file.name).filename().string();
 		}
 
-		utils::logger::write("Writing file to {} ", out_file);
+		utils::logger::write("Writing file to {}", out_file.string());
 
 		if (!utils::io::write_file(out_file, *data, false))
 		{
@@ -230,12 +229,11 @@ namespace updater
 		std::filesystem::path iw4x_basegame_directory(this->base_);
 		std::filesystem::path revision_file_path = iw4x_basegame_directory / IW4X_VERSION_FILE;
 
-		bool every_update_required = false;
+		auto every_update_required = false;
 		std::string data{};
-		const auto& props = revision_file_path.string();
 		rapidjson::Document doc{};
 
-		if (utils::io::read_file(props, &data))
+		if (utils::io::read_file(revision_file_path, &data))
 		{
 			const rapidjson::ParseResult result = doc.Parse(data);
 			if (!result || !doc.IsObject())
@@ -253,6 +251,7 @@ namespace updater
 		if (every_update_required || doc.HasMember("rawfile_version"))
 		{
 			utils::logger::write("Fetching iw4x-rawfiles tag from github...");
+
 			std::optional<std::string> rawfiles_tag = get_release_tag("https://api.github.com/repos/XLabsProject/iw4x-rawfiles/releases/latest");
 			if (rawfiles_tag.has_value())
 			{
@@ -286,10 +285,10 @@ namespace updater
 		return {};
 	}
 
-	void file_updater::create_iw4x_version_file(std::string rawfile_version) const
+	void file_updater::create_iw4x_version_file(const std::string& rawfile_version) const
 	{
-		utils::logger::write("Creating iw4x version file in {}: rawfiles are {}", this->base_, rawfile_version);
-		std::filesystem::path iw4x_basegame_directory(this->base_);
+		utils::logger::write("Creating iw4x version file in {}: rawfiles are {}", this->base_.string(), rawfile_version);
+		const auto iw4x_base_game_directory = this->base_;
 
 		rapidjson::Document doc{};
 
@@ -305,9 +304,9 @@ namespace updater
 
 		const std::string json(buffer.GetString());
 
-		std::filesystem::path revision_file_path = iw4x_basegame_directory / IW4X_VERSION_FILE;
+		const auto revision_file_path = iw4x_base_game_directory / IW4X_VERSION_FILE;
 
-		if (utils::io::write_file(revision_file_path.string(), json))
+		if (utils::io::write_file(revision_file_path, json))
 		{
 			utils::logger::write("File {} written successfully!", revision_file_path.string());
 		}
@@ -346,130 +345,27 @@ namespace updater
 
 	void file_updater::deploy_iw4x_rawfiles() const
 	{
-		const std::string rawfiles_zip = base_ + IW4X_RAWFILES_UPDATE_FILE;
+		const auto rawfiles_zip = base_ / IW4X_RAWFILES_UPDATE_FILE;
 
 		if (!utils::io::file_exists(rawfiles_zip))
 		{
 			// The zip was absent when it was expected, should we throw for this?
-			throw std::runtime_error("I'm supposed to deploy rawfiles from " + rawfiles_zip + ", but where is it?\nCould not find the downloaded update file.");
+			throw std::runtime_error("I'm supposed to deploy rawfiles from " + rawfiles_zip.generic_string() + ", but where is it?\nCould not find the downloaded update file.");
 		}
 
-		unzFile file = unzOpen(rawfiles_zip.data());
-
-		if (!file)
-		{
-			// The zip could not be opened! 
-			throw std::runtime_error("Could not open file " + rawfiles_zip + ", is it a valid zip file?");
-		}
-		
-		constexpr uint16_t READ_SIZE = 1024;
-		constexpr uint8_t MAX_FILENAME = 255;
-
-		char read_buffer[READ_SIZE] = {0};
-
-		unz_global_info global_info;
-		if (unzGetGlobalInfo(file, &global_info) == UNZ_OK)
-		{
-			// Loop to extract all files
-			for (uLong i = 0; i < global_info.number_entry; ++i)
-			{
-				// Get info about current file.
-				unz_file_info file_info;
-				char filename[MAX_FILENAME] = {0};
-
-				if (unzGetCurrentFileInfo(
-					file,
-					&file_info,
-					filename,
-					MAX_FILENAME,
-					nullptr, 0, nullptr, 0) == UNZ_OK)
-				{
-					// Check if this entry is a directory or file.
-					const auto filename_length = strlen(filename);
-					if (filename[filename_length - 1] == '/' || filename[filename_length - 1] == '\\') // ZIP is not directory-separator-agnostic
-					{
-						// Entry is a directory, so create it.
-						utils::io::create_directory(base_ + "/" + filename);
-					}
-					else
-					{
-						// Entry is a file, so extract it.
-						if (unzOpenCurrentFile(file) == UNZ_OK)
-						{
-							// Open a file to write out the data.
-							std::ofstream out(base_ + filename, std::ios::out | std::ios::binary | std::ios::trunc);
-							if (out.is_open())
-							{
-								bool firstLoop = true;
-								int readBytes = UNZ_OK;
-								while (firstLoop || readBytes > 0)
-								{
-									firstLoop = false;
-									readBytes = unzReadCurrentFile(file, read_buffer, READ_SIZE);
-									if (readBytes < 0)
-									{
-										// There was an error reading data
-										throw std::runtime_error("Error while reading" + std::string(filename) + " from the zip!");
-										break;
-									}
-
-									// Write data to file.
-									if (readBytes > 0)
-									{
-										out.write(read_buffer, readBytes);
-									}
-									else 
-									{
-										// No more data to read, the loop will break
-										// This is normal behaviour
-									}
-								} 
-
-								out.close();
-							}
-							else
-							{
-								// Could not open file for writing!
-								auto error = GetLastError();
-								throw std::runtime_error("Failed to open file "+ std::string(filename) + " from "+base_+" for writing! Error code " + std::to_string(error));
-							}
-
-							utils::logger::write("Done extracting file {}", filename);
-							unzCloseCurrentFile(file);
-						}
-						else 
-						{
-							// Could not read file from the ZIP
-							throw std::runtime_error("Failed to read file " + std::string(filename) + " from the releases ZIP!");
-						}
-					}
-
-					// Go the the next entry listed in the zip file.
-					if ((i + 1) < global_info.number_entry)
-					{
-						int entry_state = unzGoToNextFile(file);
-						if (entry_state != UNZ_OK)
-						{
-							unzClose(file);
-							throw std::runtime_error("Failed to fetch next entry " + std::to_string(i) + " in file (entry state is " + std::to_string(entry_state) + ")");
-						}
-					}
-				}
-			}
-		}
-
-		unzClose(file);
+		// the goal is now to unzip rawfiles_zip into base_
+		utils::zip::unzip(rawfiles_zip, base_);
 
 		const auto has_removed_file = utils::io::remove_file(rawfiles_zip);
 
 		if (has_removed_file)
 		{
-			utils::logger::write("Successfully removed file {}", rawfiles_zip);
+			utils::logger::write("Successfully removed file {}", rawfiles_zip.string());
 		}
 		else
 		{
 			throw std::runtime_error(
-				"Failed to remove " + rawfiles_zip + ", this is not supposed to happen! Error code " + std::to_string(::GetLastError()));
+				"Failed to remove " + rawfiles_zip.string() + ". Error code " + std::to_string(::GetLastError()));
 		}
 	}
 
@@ -563,14 +459,14 @@ namespace updater
 		return hash != file.hash;
 	}
 
-	std::string file_updater::get_drive_filename(const file_info& file) const
+	std::filesystem::path file_updater::get_drive_filename(const file_info& file) const
 	{
 		if (file.name == UPDATE_HOST_BINARY)
 		{
 			return this->process_file_;
 		}
 
-		return this->base_ + "data/" + file.name;
+		return this->base_ / "data" / file.name;
 	}
 
 	void file_updater::move_current_process_file() const

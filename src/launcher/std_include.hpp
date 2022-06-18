@@ -22,6 +22,7 @@
 #include <atomic>
 #include <set>
 #include <unordered_set>
+#include <filesystem>
 
 #include <optional>
 

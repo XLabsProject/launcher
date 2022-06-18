@@ -16,7 +16,7 @@ namespace cef
 {
 	namespace
 	{
-		void delay_load_cef(const std::string& path)
+		void delay_load_cef(const std::filesystem::path& path)
 		{
 			static std::atomic<bool> initialized{false};
 			auto uninitialized = false;
@@ -35,7 +35,8 @@ namespace cef
 			if (!utils::nt::library::load("libcef.dll"s) //
 				|| !utils::nt::library::delay_load("libcef.dll"))
 			{
-				throw std::runtime_error("Failed to load CEF");
+				auto err = GetLastError();
+				throw std::runtime_error("Failed to load CEF: "+ std::system_category().message(err)+"\nPath is "+path.generic_string());
 			}
 		}
 	}
@@ -61,7 +62,7 @@ namespace cef
 		return CefExecuteProcess(args, nullptr, nullptr);
 	}
 
-	void cef_ui::create(const std::string& folder, const std::string& file)
+	void cef_ui::create(const std::filesystem::path& folder, const std::string& file)
 	{
 		if (this->browser_) return;
 
@@ -85,11 +86,11 @@ namespace cef
 #endif
 
 		CefString(&settings.browser_subprocess_path) = this->process_.get_path();
-		CefString(&settings.locales_dir_path) = this->path_ + (CEF_PATH "/locales");
-		CefString(&settings.resources_dir_path) = this->path_ + CEF_PATH;
-		CefString(&settings.log_file) = this->path_ + "user/cef-data/debug.log";
-		CefString(&settings.user_data_path) = this->path_ + "user/cef-data/user";
-		CefString(&settings.cache_path) = this->path_ + "user/cef-data/cache";
+		CefString(&settings.locales_dir_path) = this->path_ / CEF_PATH "/locales";
+		CefString(&settings.resources_dir_path) = this->path_ / CEF_PATH;
+		CefString(&settings.log_file) = this->path_ / "user/cef-data/debug.log";
+		CefString(&settings.user_data_path) = this->path_ / "user/cef-data/user";
+		CefString(&settings.cache_path) = this->path_ / "user/cef-data/cache";
 		CefString(&settings.locale) = "en-US";
 
 		this->initialized_ = CefInitialize(args, settings, new cef_ui_app(), nullptr);
@@ -142,10 +143,10 @@ namespace cef
 		this->browser_->Reload();
 	}
 
-	cef_ui::cef_ui(utils::nt::library process, std::string path)
+	cef_ui::cef_ui(utils::nt::library process, std::filesystem::path path)
 		: process_(std::move(process)), path_(std::move(path))
 	{
-		delay_load_cef(this->path_ + CEF_PATH);
+		delay_load_cef(this->path_ / CEF_PATH);
 		CefEnableHighDPISupport();
 	}
 

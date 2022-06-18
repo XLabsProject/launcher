@@ -20,7 +20,7 @@ namespace
 		return barrier.compare_exchange_strong(expected, true);
 	}
 
-	std::string get_appdata_path()
+	std::filesystem::path get_appdata_path()
 	{
 		PWSTR path;
 		if (!SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &path)))
@@ -33,13 +33,15 @@ namespace
 			CoTaskMemFree(path);
 		});
 
-		return utils::string::convert(path) + "/xlabs/";
+		auto fs_path = std::filesystem::path(path) / "xlabs";
+
+		return fs_path;
 	}
 
 	void set_working_directory()
 	{
 		const auto appdata = get_appdata_path();
-		SetCurrentDirectoryA(appdata.data());
+		std::filesystem::current_path(appdata);
 	}
 
 	void enable_dpi_awareness()
@@ -106,7 +108,7 @@ namespace
 		}).detach();
 	}
 
-	int run_subprocess(const utils::nt::library& process, const std::string& path)
+	int run_subprocess(const utils::nt::library& process, const std::filesystem::path& path)
 	{
 		const cef::cef_ui cef_ui{process, path};
 		return cef_ui.run_process();
@@ -149,8 +151,8 @@ namespace
 
 			SetEnvironmentVariableA("XLABS_AW_INSTALL", aw_install->data());
 
-			const auto s1x_exe = get_appdata_path() + "data/s1x/s1x.exe";
-			utils::nt::launch_process(s1x_exe, mapped_arg->second);
+			const auto s1x_exe = get_appdata_path() / "data/s1x/s1x.exe";
+			utils::nt::launch_process(s1x_exe, utils::string::convert(mapped_arg->second));
 
 			cef_ui.close_browser();
 		});
@@ -188,8 +190,8 @@ namespace
 
 			SetEnvironmentVariableA("XLABS_GHOSTS_INSTALL", ghosts_install->data());
 
-			const auto iw6x_exe = get_appdata_path() + "data/iw6x/iw6x.exe";
-			utils::nt::launch_process(iw6x_exe, mapped_arg->second);
+			const auto iw6x_exe = get_appdata_path() / "data/iw6x/iw6x.exe";
+			utils::nt::launch_process(iw6x_exe, utils::string::convert(mapped_arg->second));
 
 			cef_ui.close_browser();
 		});
@@ -230,10 +232,10 @@ namespace
 			file_updater.update_iw4x_if_necessary();
 
 			const auto iw4x_exe = mw2_install.value() + "\\iw4x.exe";
-			const auto dll_path = get_appdata_path() + "data/iw4x";
+			const auto dll_path = get_appdata_path() / "data/iw4x";
 
 			utils::nt::update_dll_search_path(dll_path);
-			utils::nt::launch_process(iw4x_exe, mapped_arg->second);
+			utils::nt::launch_process(iw4x_exe, utils::string::convert(mapped_arg->second));
 
 			cef_ui.close_browser();
 		});
@@ -324,7 +326,7 @@ namespace
 			}
 
 			const std::string channel{value.GetString(), value.GetStringLength()};
-			const auto* const command_line = channel == "main" ? "--xlabs-channel-main" : "--xlabs-channel-develop";
+			const auto* const command_line = channel == "main" ? L"--xlabs-channel-main" : L"--xlabs-channel-develop";
 
 			utils::at_exit([command_line]()
 			{
@@ -335,11 +337,11 @@ namespace
 		});
 	}
 
-	void show_window(const utils::nt::library& process, const std::string& path)
+	void show_window(const utils::nt::library& process, const std::filesystem::path& path)
 	{
 		cef::cef_ui cef_ui{process, path};
 		add_commands(cef_ui);
-		cef_ui.create(path + "data/launcher-ui", "main.html");
+		cef_ui.create(path / "data/launcher-ui", "main.html");
 		cef_ui.work();
 	}
 }

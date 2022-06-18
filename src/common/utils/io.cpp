@@ -4,24 +4,24 @@
 
 namespace utils::io
 {
-	bool remove_file(const std::string& file)
+	bool remove_file(const std::filesystem::path& file)
 	{
-		return DeleteFileA(file.data()) == TRUE;
+		return DeleteFileW(file.wstring().data()) == TRUE;
 	}
 
-	bool move_file(const std::string& src, const std::string& target)
+	bool move_file(const std::filesystem::path& src, const std::filesystem::path& target)
 	{
-		return MoveFileA(src.data(), target.data()) == TRUE;
+		return MoveFileW(src.wstring().data(), target.wstring().data()) == TRUE;
 	}
 
-	bool file_exists(const std::string& file)
+	bool file_exists(const std::wstring& file)
 	{
 		return std::ifstream(file).good();
 	}
 
-	bool write_file(const std::string& file, const std::string& data, const bool append)
+	bool write_file(const std::wstring& file, const std::string& data, const bool append)
 	{
-		const auto pos = file.find_last_of("/\\");
+		const auto pos = file.find_last_of(L"/\\");
 		if (pos != std::string::npos)
 		{
 			create_directory(file.substr(0, pos));
@@ -40,14 +40,14 @@ namespace utils::io
 		return false;
 	}
 
-	std::string read_file(const std::string& file)
+	std::string read_file(const std::wstring& file)
 	{
 		std::string data;
 		read_file(file, &data);
 		return data;
 	}
 
-	bool read_file(const std::string& file, std::string* data)
+	bool read_file(const std::wstring& file, std::string* data)
 	{
 		if (!data) return false;
 		data->clear();
@@ -73,7 +73,7 @@ namespace utils::io
 		return false;
 	}
 
-	size_t file_size(const std::string& file)
+	size_t file_size(const std::wstring& file)
 	{
 		if (file_exists(file))
 		{
@@ -89,37 +89,37 @@ namespace utils::io
 		return 0;
 	}
 
-	bool create_directory(const std::string& directory)
+	bool create_directory(const std::filesystem::path& directory)
 	{
 		return std::filesystem::create_directories(directory);
 	}
 
-	bool directory_exists(const std::string& directory)
+	bool directory_exists(const std::filesystem::path& directory)
 	{
 		return std::filesystem::is_directory(directory);
 	}
 
-	bool directory_is_empty(const std::string& directory)
+	bool directory_is_empty(const std::filesystem::path& directory)
 	{
 		return std::filesystem::is_empty(directory);
 	}
 
-	std::vector<std::string> list_files(const std::string& directory, const bool recursive)
+	std::vector<std::wstring> list_files(const std::filesystem::path& directory, const bool recursive)
 	{
-		std::vector<std::string> files;
+		std::vector<std::wstring> files;
 
 		if(recursive)
 		{
 			for (auto& file : std::filesystem::recursive_directory_iterator(directory))
 			{
-				files.push_back(file.path().generic_string());
+				files.push_back(file.path().wstring());
 			}
 		}
 		else
 		{
 			for (auto& file : std::filesystem::directory_iterator(directory))
 			{
-				files.push_back(file.path().generic_string());
+				files.push_back(file.path().wstring());
 			}
 		}
 
