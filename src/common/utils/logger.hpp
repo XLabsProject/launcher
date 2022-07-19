@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string_view>
 #include <format>
 #include <source_location>
 
@@ -12,23 +11,20 @@ namespace utils::logger
 	void log_format(std::string_view fmt, std::format_args&& args);
 #endif
 
-	static inline void log(std::string_view fmt, std::format_args&& args)
+	template <typename... Args>
+	class write
 	{
+	public:
+		write(std::string_view fmt, const Args&... args, [[maybe_unused]] const std::source_location& loc = std::source_location::current())
+		{
 #ifdef _DEBUG
-		log_format(std::source_location::current(), fmt, std::move(args));
+			log_format(loc, fmt, std::make_format_args(args...));
 #else
-		log_format(fmt, std::move(args));
+			log_format(fmt, std::make_format_args(args...));
 #endif
-	}
-
-	static inline void write(std::string_view fmt)
-	{
-		log(fmt, std::make_format_args(0));
-	}
+		}
+	};
 
 	template <typename... Args>
-	static inline void write(std::string_view fmt, Args&&... args)
-	{
-		log(fmt, std::make_format_args(args...));
-	}
+	write(std::string_view fmt, const Args&... args) -> write<Args...>;
 }

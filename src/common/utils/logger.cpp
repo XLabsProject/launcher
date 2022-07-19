@@ -9,7 +9,7 @@ namespace utils::logger
 {
 	namespace
 	{
-		constexpr auto log_file_name = "xlabs.log";
+		constexpr auto* log_file_name = "xlabs.log";
 		std::mutex logger_mutex;
 
 		std::ofstream& get_stream()
@@ -21,7 +21,7 @@ namespace utils::logger
 
 		void write_to_log(const std::string& line)
 		{
-			std::unique_lock<std::mutex> _(logger_mutex);
+			std::unique_lock _(logger_mutex);
 
 			try
 			{
@@ -47,7 +47,7 @@ namespace utils::logger
 #endif
 	{
 #ifdef _DEBUG
-		const auto loc_info = std::format("{}::{} ", location.file_name(), location.function_name());
+		const auto loc_info = std::format("Debug: {}::{}\n    ", location.file_name(), location.function_name());
 		const auto line = loc_info + std::vformat(fmt, args);
 #else
 		const auto line = std::vformat(fmt, args);
