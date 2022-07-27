@@ -204,6 +204,7 @@ namespace
 			const std::string arg{value.GetString(), value.GetStringLength()};
 
 			static const std::unordered_map<std::string, std::string> arg_mapping = {
+				{"mw2-sp", "-singleplayer"},
 				{"mw2-mp", "-multiplayer"},
 			};
 
@@ -229,11 +230,21 @@ namespace
 			const updater::file_updater file_updater{ updater_ui, mw2_install.value() + "\\", ""};
 			file_updater.update_iw4x_if_necessary();
 
-			const auto iw4x_exe = mw2_install.value() + "\\iw4x.exe";
-			const auto dll_path = get_appdata_path() + "data/iw4x";
+			// Until MP changes it way of loading this is the only way
+			if (arg == "mw2-sp"s)
+			{
+				SetEnvironmentVariableA("XLABS_MW2_INSTALL", mw2_install->data());
+				const auto iw4x_sp_exe = get_appdata_path() + "data/iw4x/iw4x-sp.exe";
+				utils::nt::launch_process(iw4x_sp_exe, mapped_arg->second);
+			}
+			else
+			{
+				const auto iw4x_exe = mw2_install.value() + "\\iw4x.exe";
+				const auto dll_path = get_appdata_path() + "data/iw4x";
 
-			utils::nt::update_dll_search_path(dll_path);
-			utils::nt::launch_process(iw4x_exe, mapped_arg->second);
+				utils::nt::update_dll_search_path(dll_path);
+				utils::nt::launch_process(iw4x_exe, mapped_arg->second);
+			}
 
 			cef_ui.close_browser();
 		});
