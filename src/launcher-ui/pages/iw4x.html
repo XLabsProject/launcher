@@ -1,4 +1,9 @@
 <div class="grid">
+    <span class="a container card" id="mw2-sp">
+        <span class="title">Singleplayer</span>
+    <span class="content img" style="background-image: url(./img/iw4x-sp.png)"></span>
+    </span>
+
     <span class="a container card" id="mw2-mp">
         <span class="title">Multiplayer</span>
     <span class="content img" style="background-image: url(./img/iw4x-mp.png)"></span>
@@ -7,14 +12,12 @@
 
 <style>
     #content>.grid {
-        display:grid;
-		width:100%;
-		cursor:pointer;
+        flex: 1 1 auto;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-auto-rows: minmax(100px, auto);
     }
-	
-	#content>.grid:active{
-		filter: brightness(80%);
-	}
 </style>
 
 <script>
