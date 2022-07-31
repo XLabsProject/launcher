@@ -7,6 +7,8 @@
 #include <utils/named_mutex.hpp>
 #include <utils/exit_callback.hpp>
 #include <utils/properties.hpp>
+#include <utils/io.hpp>
+
 #include <updater/file_updater.hpp>
 #include <updater/updater_ui.hpp>
 
@@ -240,9 +242,11 @@ namespace
 			else
 			{
 				const auto iw4x_exe = mw2_install.value() + "\\iw4x.exe";
-				const auto dll_path = get_appdata_path() + "data/iw4x";
+				const auto iw4x_dll = mw2_install.value() + "\\iw4x.dll";
+				const auto search_path = get_appdata_path() + "data/iw4x";
 
-				utils::nt::update_dll_search_path(dll_path);
+				utils::io::remove_file(iw4x_dll);
+				utils::nt::update_dll_search_path(search_path);
 				utils::nt::launch_process(iw4x_exe, mapped_arg->second);
 			}
 
